@@ -8,8 +8,7 @@ from models import Dummy
 class UtilitiesTestCase(TestCase):
     def setUp(self):
         self.dummyTest = 1
-        fakeDummy = Dummy(value = 2)
-        fakeDummy.save()
+        fakeDummy = Dummy(value = 1)
 
     def test_dummy_test(self):
         self.assertEqual(self.dummyTest, 1)
