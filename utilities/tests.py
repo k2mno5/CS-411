@@ -8,12 +8,12 @@ from models import Dummy
 class UtilitiesTestCase(TestCase):
     def setUp(self):
         self.dummyTest = 1
-        fakeDummy = Dummy(value = 1)
+        fakeDummy = Dummy(value = 2)
         fakeDummy.save()
 
     def test_dummy_test(self):
         self.assertEqual(self.dummyTest, 1)
 
     def test_dummy_model(self):
-        dummy = Dummy.objects.get(pk=1)
+        dummy = Dummy.objects.get(value=1)
         self.assertEqual(dummy.value, 1)
