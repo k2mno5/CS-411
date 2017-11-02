@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.test import TestCase
-from models import Dummy
+from models import UtilitiesDummy as Dummy
 
 # Create your tests here.
 class UtilitiesTestCase(TestCase):
