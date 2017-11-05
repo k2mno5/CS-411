@@ -14,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist
 # date processing dependency
 from django.core import serializers
 from . import json_parser
+from django.http import JsonResponse
 
 # logger for management module
 stdlogger = logging.getLogger(__name__)
@@ -88,4 +89,4 @@ def getUserUpdate_random():
  	# formatting json object	
  	data_json = serializers.serialize('json', random_data)
  	data_json = json_parser.json_getUserUpdate(data_json, tag_array, len(tag_array))
-	return HttpResponse(data_json, content_type = "appn/json")
+	return JsonResponse(data_json)

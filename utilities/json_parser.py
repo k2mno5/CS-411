@@ -44,6 +44,6 @@ def json_getUserUpdate(JSONInFile, tagArray, numData):
 
 	JSONOutDict = {}
 	JSONOutDict['contents'] = JSONOutFile 
-	return json.dumps(JSONOutDict)
-
+	# return json.dumps(JSONOutDict)
+	return JSONOutDict
 	
