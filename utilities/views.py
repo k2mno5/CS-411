@@ -44,3 +44,10 @@ def getUserUpdate_random(request):
 # output json file specified online
 def displayQuestionAnswers(request, qaID, is_ques):
 	return management.displayQuestionAnswers(int(qaID), int(is_ques))
+
+
+
+
+def postQuestion(request):
+	stdlogger.info(request.POST.get('data'))
+	return HttpResponse(request.POST.get('data'))
