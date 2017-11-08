@@ -37,3 +37,10 @@ def updateVoteStatus(request, postID, postType, userID, voteStatus):
 #        implemented later on.
 def getUserUpdate_random(request):
     return management.getUserUpdate_random()
+
+# display question answers
+# input ID, possibly UID or AID, 
+#		ques, specify whether a question an all of its answers will return
+# output json file specified online
+def displayQuestionAnswers(request, qaID, is_ques):
+	return management.displayQuestionAnswers(int(qaID), int(is_ques))
