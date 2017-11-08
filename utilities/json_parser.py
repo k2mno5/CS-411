@@ -36,10 +36,10 @@ def json_getUserUpdate(JSONInFile, tagArray, numData):
 		JSONOutFile.append(json_dic)
 
 	for instance in JSONOutFile:
-		instance['tag'] = []
+		instance['tags'] = []
 		for each_tag in tagArray:
 			if instance['qID'] == each_tag[1]:
-				instance['tag'].append(each_tag[0])
+				instance['tags'].append(each_tag[0])
 	
 
 	JSONOutDict = {}
