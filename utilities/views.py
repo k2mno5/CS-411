@@ -51,5 +51,5 @@ def displayQuestionAnswers(request, qaID, is_ques):
 
 @csrf_exempt
 def postQuestion(request):
-	stdlogger.info(request.POST.get('data'))
-	return HttpResponse(request.POST.get('data'))
+	stdlogger.info(request)
+	return HttpResponse("giving out responses, {}, {}, {}".format(request.POST.get('number'), request.POST.get('type'), request.POST.get('action')))
