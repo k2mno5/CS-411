@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from models import Questions
 from . import management
 import time
 import logging
+
 
 # Logger in view module see README to use the logger print here will not work
 stdlogger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ def displayQuestionAnswers(request, qaID, is_ques):
 
 
 
-
+@csrf_exempt
 def postQuestion(request):
 	stdlogger.info(request.POST.get('data'))
 	return HttpResponse(request.POST.get('data'))
