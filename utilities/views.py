@@ -48,8 +48,14 @@ def displayQuestionAnswers(request, qaID, is_ques):
 	return management.displayQuestionAnswers(int(qaID), int(is_ques))
 
 
-
+# post answer, add an answer to the question
+# input request containing the json file of hte answer
+# output ack
+# side-effect: answer piped into the database
 @csrf_exempt
-def postQuestion(request):
-	stdlogger.info(request)
-	return HttpResponse("giving out responses, {}, {}, {}".format(request.POST.get('number'), request.POST.get('type'), request.POST.get('action')))
+def postAnswer(request):
+    return management.postAnswer(request.body)
+
+# delete a post, could be a question or an answer
+def deletePost(request, ID, is_ques):
+    return management.deletePost(int(ID), int(is_ques))

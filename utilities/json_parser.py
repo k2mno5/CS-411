@@ -57,6 +57,7 @@ def json_displayQuestionAnswers(req_question, req_answers, tagArray, questionAut
 		questionDict = collections.OrderedDict()
 		questionDict['qid']  =req_question.qid
 		questionDict['authorName'] = questionAuthor[0]
+		questionDict['authorID'] = questionAuthor[2]
 		questionDict['reputation'] = questionAuthor[1]
 		questionDict['title'] = req_question.title
 		questionDict['body'] = req_question.body
@@ -82,6 +83,7 @@ def json_displayQuestionAnswers(req_question, req_answers, tagArray, questionAut
 			answerDict['aid'] = instance.aid
 			answerDict['authorName'] = answerAuthors[i][0]
 			answerDict['reputation'] = answerAuthors[i][1]
+			answerDict['authorID'] = answerAuthors[i][2]
 			answerDict['body'] = instance.body
 			answerDict['upvotes'] = instance.upvote
 			answerDict['downvotes'] = instance.downvote
