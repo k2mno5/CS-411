@@ -51,3 +51,42 @@ def getFollowingStatus(request):
         else:
             res_dict['following_results'].append("y")
     return JsonResponse(res_dict)
+
+def getVoteStatus(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'content' not in jsonBody or 'userID' not in jsonBody['content'] or 'qIDs' not in jsonBody['content'] or 'aIDs' not in jsonBody['content']:
+        return HttpResponseBadRequest('Missing field')
+
+    # check if field type match
+    uID = -1
+    try:
+        uID = int(jsonBody['content']['userID'])
+    except:
+        return HttpResponseBadRequest('Field type does not match')
+
+    qIDs = []
+    aIDs = []
+    for target in jsonBody['content']['qIDs']:
+        try:
+            qIDs.append(int(target))
+        except:
+            return HttpResponseBadRequest('Field type does not match')
+
+    for target in jsonBody['content']['aIDs']:
+        try:
+            aIDs.append(int(target))
+        except:
+            return HttpResponseBadRequest('Field type does not match')
+
+
+    qRes, aRes = management.getVoteStatus(uID, qIDs, aIDs)
+    res_dict = {}
+    res_dict['question_voted_status'] = []
+    res_dict['answer_voted_status'] = []
+    for status in qRes:
+        res_dict['question_voted_status'].append(status)
+    for status in aRes:
+        res_dict['answer_voted_status'].append(status)
+    return JsonResponse(res_dict)

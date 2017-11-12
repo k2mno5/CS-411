@@ -51,3 +51,50 @@ def getFollowingStatus(uID, targets):
         else:
             res.append(0)
     return res
+
+def getVoteStatus(uID, qIDs, aIDs):
+    # prepare WHERE clause
+    where = " WHERE uid = {} and (".format(uID)
+    for qID in qIDs:
+        where += " (actionid = {} and (actiontype = {} or actiontype = {})) or ".format(qID, 2, 4)
+    for aID in aIDs:
+        where += " (actionid = {} and (actiontype = {} or actiontype = {})) or ".format(aID, 3, 5)
+    where += " true = false)" # "true = false" to handle the tailing or
+
+    # raw SQL query
+    query = "SELECT * FROM ActivityHistory" + where
+
+    status = StackQuora.Activityhistory.objects.raw(query)
+
+    qRes = []
+    aRes = []
+    for qID in qIDs:
+        found = False
+        for res in status:
+            if res.actionid == qID:
+                if res.actiontype == 2 or res.actiontype == 4:
+                    found = True
+                    if res.actiontype == 2:
+                        qRes.append(1)
+                    else:
+                        qRes.append(-1)
+                    break
+        if not found:
+            qRes.append(0)
+
+    for aID in aIDs:
+        found = False
+        for res in status:
+            if res.actionid == aID:
+                if res.actiontype == 3 or res.actiontype == 5:
+                    found = True
+                    if res.actiontype == 3:
+                        aRes.append(1)
+                    else:
+                        aRes.append(-1)
+                    break
+        if not found:
+            aRes.append(0)
+
+
+    return qRes, aRes
