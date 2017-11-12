@@ -37,6 +37,7 @@ class ManagementTestCase(TestCase):
         res = management.getFollowingStatus(userID, emptyTarget)
         self.assertEqual(res, [])
 
+
     def testGetMultipleFollowing(self):
         userID = 6
         target = [1, 5, 7]
@@ -50,6 +51,52 @@ class ManagementTestCase(TestCase):
         target = [1, 2, 3]
         res = management.getFollowingStatus(userID, target)
         self.assertEqual(res, [0, 0, 0])
+
+
+    def testGetOneVoteStatus(self):
+        userID = 6
+
+        isAnswerVoted = [2]
+        isAnswerNotVoted = [3]
+        isAnswerInvalid = [5]
+        isQuestionVoted = [2]
+        isQuestionNotVoted = [1]
+        isQuestionInvalid = [5]
+
+        qRes, aRes = management.getVoteStatus(userID, isQuestionVoted, isAnswerVoted)
+        self.assertEqual(qRes, [1])
+        self.assertEqual(aRes, [-1])
+
+        qRes, aRes = management.getVoteStatus(userID, isQuestionNotVoted, isAnswerNotVoted)
+        self.assertEqual(qRes, [0])
+        self.assertEqual(aRes, [0])
+
+        qRes, aRes = management.getVoteStatus(userID, isQuestionInvalid, isAnswerInvalid)
+        self.assertEqual(qRes, [0])
+        self.assertEqual(aRes, [0])
+
+        emptyTarget = []
+        qRes, aRes = management.getVoteStatus(userID, emptyTarget, emptyTarget)
+        self.assertEqual(qRes, [])
+        self.assertEqual(aRes, [])
+
+
+    def testGetMultipleVote(self):
+        userID = 6
+        qTarget = [1, 2, 5]
+        aTarget = [2, 3, 5]
+        qRes, aRes = management.getVoteStatus(userID, qTarget, aTarget)
+        self.assertEqual(qRes, [0, 1, 0])
+        self.assertEqual(aRes, [-1, 0, 0])
+
+ 
+    def testGetVoteStatusInvalidCase(self):
+        # invalid user ID
+        userID = 7
+        target = [1, 2, 3]
+        qRes, aRes = management.getVoteStatus(userID, target, target)
+        self.assertEqual(qRes, [0, 0, 0])
+        self.assertEqual(aRes, [0, 0, 0])
 
 
 class ViewTestCase(TestCase):
@@ -75,6 +122,29 @@ class ViewTestCase(TestCase):
         # missing field
         self.request.body = json.dumps({'content':{'userID':'6'}})
         response = views.getFollowingStatus(self.request)
+        self.assertEqual(response.content, 'Missing field')
+        self.assertEqual(response.status_code, 400)
+
+
+    def testValidGetVoteStatus(self):
+        self.request.body = json.dumps({'content':{'userID':'6', 'qIDs':['1', '2', '5'], 'aIDs':['2', '3', '5']}})
+        response = views.getVoteStatus(self.request)
+        self.assertEqual(response.content, '{"question_voted_status": [0, 1, 0], "answer_voted_status": [-1, 0, 0]}')
+
+    def testInvalidGetFollowingStatus(self):
+        # field type does not match
+        self.request.body = json.dumps({'content':{'userID':'abc', 'qIDs':['1', '2', '5'], 'aIDs':['2', '3', '5']}})
+        response1 = views.getVoteStatus(self.request)
+
+        self.request.body = json.dumps({'content':{'userID':'6', 'qIDs':['1', '2', '5'], 'aIDs':['2', '3', 'abc']}})
+        response2 = views.getVoteStatus(self.request)
+        self.assertEqual(response1.content, response2.content)
+        self.assertEqual(response1.content, 'Field type does not match')
+        self.assertEqual(response1.status_code, 400)
+       
+        # missing field
+        self.request.body = json.dumps({'content':{'userID':'6'}})
+        response = views.getVoteStatus(self.request)
         self.assertEqual(response.content, 'Missing field')
         self.assertEqual(response.status_code, 400)
  

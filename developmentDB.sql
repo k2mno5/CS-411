@@ -18,6 +18,7 @@
 --
 -- Current Database: `StackQuoraDev`
 --
+
 DROP DATABASE IF EXISTS `StackQuoraDev`;
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `StackQuoraDev` /*!40100 DEFAULT CHARACTER SET latin1 */;
 
@@ -45,7 +46,7 @@ CREATE TABLE `ActivityHistory` (
 
 LOCK TABLES `ActivityHistory` WRITE;
 /*!40000 ALTER TABLE `ActivityHistory` DISABLE KEYS */;
-INSERT INTO `ActivityHistory` VALUES (1,1,0,'2017-11-11 21:25:05'),(1,2,0,'2017-11-11 21:25:29'),(2,1,1,'2017-11-11 21:30:07'),(2,2,3,'2017-11-11 21:44:38'),(3,2,1,'2017-11-11 21:30:30'),(5,3,0,'2017-11-11 21:27:01'),(6,2,5,'2017-11-11 21:44:55'),(6,3,1,'2017-11-11 21:31:16'),(6,4,0,'2017-11-11 21:27:39');
+INSERT INTO `ActivityHistory` VALUES (1,1,0,'2017-11-11 21:25:05'),(1,2,0,'2017-11-11 21:25:29'),(2,1,1,'2017-11-11 21:30:07'),(2,2,3,'2017-11-11 21:44:38'),(3,2,1,'2017-11-11 21:30:30'),(5,3,0,'2017-11-11 21:27:01'),(6,2,2,'2017-11-12 12:17:51'),(6,2,5,'2017-11-11 21:44:55'),(6,3,1,'2017-11-11 21:31:16'),(6,4,0,'2017-11-11 21:27:39');
 /*!40000 ALTER TABLE `ActivityHistory` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -132,7 +133,7 @@ CREATE TABLE `Questions` (
 
 LOCK TABLES `Questions` WRITE;
 /*!40000 ALTER TABLE `Questions` DISABLE KEYS */;
-INSERT INTO `Questions` VALUES (1,1,'2017-11-11 21:25:05',NULL,0,'first Python question','This post is about Python.',0,0,0),(2,1,'2017-11-11 21:25:29',NULL,0,'another Python question','This post is another one about Python.',0,0,0),(3,5,'2017-11-11 21:27:01',NULL,0,'A Java question','This post is a Java question from person whom nobody cares.',0,0,0),(4,6,'2017-11-11 21:27:39',NULL,0,'A C question','This post is a C question from main user.',0,0,0);
+INSERT INTO `Questions` VALUES (1,1,'2017-11-11 21:25:05',NULL,0,'first Python question','This post is about Python.',0,0,0),(2,1,'2017-11-11 21:25:29',NULL,1,'another Python question','This post is another one about Python.',1,0,0),(3,5,'2017-11-11 21:27:01',NULL,0,'A Java question','This post is a Java question from person whom nobody cares.',0,0,0),(4,6,'2017-11-11 21:27:39',NULL,0,'A C question','This post is a C question from main user.',0,0,0);
 /*!40000 ALTER TABLE `Questions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -184,7 +185,7 @@ CREATE TABLE `Users` (
 
 LOCK TABLES `Users` WRITE;
 /*!40000 ALTER TABLE `Users` DISABLE KEYS */;
-INSERT INTO `Users` VALUES (1,'Alice',2,3,0,'2017-11-11 21:15:56'),(2,'Javis',2,3,0,'2017-11-11 21:16:26'),(3,'Emily',2,3,0,'2017-11-11 21:17:04'),(4,'Joseph',0,1,0,'2017-11-11 21:17:29'),(5,'Adam',0,0,0,'2017-11-11 21:19:55'),(6,'Aya',4,0,0,'2017-11-11 21:20:00');
+INSERT INTO `Users` VALUES (1,'Alice',2,3,1,'2017-11-11 21:15:56'),(2,'Javis',2,3,0,'2017-11-11 21:16:26'),(3,'Emily',2,3,0,'2017-11-11 21:17:04'),(4,'Joseph',0,1,0,'2017-11-11 21:17:29'),(5,'Adam',0,0,0,'2017-11-11 21:19:55'),(6,'Aya',4,0,0,'2017-11-11 21:20:00');
 /*!40000 ALTER TABLE `Users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -497,4 +498,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-11-12  1:38:38
+-- Dump completed on 2017-11-12 13:18:43
