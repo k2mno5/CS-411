@@ -85,6 +85,7 @@ DATABASES = {
            'PASSWORD':'semaphoredb',
        },
        'USER':'root',
+       'PASSWORD':'semaphoredb',
        'HOST':'127.0.0.1',
     }
 }
