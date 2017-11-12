@@ -2,18 +2,14 @@
 from __future__ import unicode_literals
 
 from django.test import TestCase
-from models import Dummy
+from . import models as StackQuora
 
 # Create your tests here.
 class UtilitiesTestCase(TestCase):
     def setUp(self):
-        self.dummyTest = 1
-        fakeDummy = Dummy(value = 1)
-        fakeDummy.save()
-
-    def test_dummy_test(self):
-        self.assertEqual(self.dummyTest, 1)
+        return;
 
     def test_dummy_model(self):
-        dummy = Dummy.objects.get(value=1)
-        self.assertEqual(dummy.value, 1)
+        dir(StackQuora)
+        firstUser = StackQuora.Users.objects.get(uid=1)
+        self.assertEqual(firstUser.username, "Alice")
