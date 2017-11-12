@@ -82,9 +82,9 @@ DATABASES = {
        'NAME':'StackQuoraDev',
        'TEST':{
            'NAME':'StackQuoraDev',
+           'PASSWORD':'semaphoredb',
        },
        'USER':'root',
-       #'PASSWORD':'semaphoredb',
        'HOST':'127.0.0.1',
     }
 }
