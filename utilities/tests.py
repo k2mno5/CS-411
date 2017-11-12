@@ -131,7 +131,7 @@ class ViewTestCase(TestCase):
         response = views.getVoteStatus(self.request)
         self.assertEqual(response.content, '{"question_voted_status": [0, 1, 0], "answer_voted_status": [-1, 0, 0]}')
 
-    def testInvalidGetFollowingStatus(self):
+    def testInvalidGetVoteStatus(self):
         # field type does not match
         self.request.body = json.dumps({'content':{'userID':'abc', 'qIDs':['1', '2', '5'], 'aIDs':['2', '3', '5']}})
         response1 = views.getVoteStatus(self.request)
