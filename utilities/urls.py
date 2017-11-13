@@ -9,4 +9,6 @@ urlpatterns = [
     	views.displayQuestionAnswers),
     url(r'^post/postAnswer/$',views.postAnswer),
     url(r'^post/deletePost/(?P<ID>[0-9]+)/(?P<is_ques>[0-9]+)/$',views.deletePost),
+    url(r'^user/following/checkList$',views.getFollowingStatus),
+    url(r'^post/vote/checkList$',views.getVoteStatus),
 ]

@@ -4,6 +4,8 @@ import logging
 import time
 import django.db.models
 from django.http import HttpResponse
+from django.http import *
+
 
 # datebase dependency
 from . import models as StackQuora
@@ -39,7 +41,7 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
 		else:
 			data = StackQuora.Answers.objects.get(aid = postID)
 	except:
-		return HttpResponse("No corresponding Questions/Answers \
+		return HttpResponseBadRequest("No corresponding Questions/Answers \
 			found in table, something is wrong, \
 			check your record.")
 
@@ -115,7 +117,7 @@ def displayQuestionAnswers(qaID, is_ques):
 		try:
 			req_question = StackQuora.Questions.objects.get(qid = qaID)
 		except ObjectDoesNotExist:
-			return HttpResponse("qID no longer exist in the database")
+			return HttpResponseBadRequest("qID no longer exist in the database")
 
 		# try to get corresponding answers may be empty
 		req_answers = StackQuora.Answers.objects.filter(parentid = req_question.qid)
@@ -151,7 +153,7 @@ def displayQuestionAnswers(qaID, is_ques):
 		try:
 			req_answer = StackQuora.Answers.objects.get(aid  = qaID)
 		except ObjectDoesNotExist:
-			return HttpResponse("aID no longer exist in the database")
+			return HttpResponseBadRequest("aID no longer exist in the database")
 		answerAuthor = StackQuora.Users.objects.get(uid = req_answer.owneruserid)
 		answerAuthors.append((answerAuthor.username,answerAuthor.reputation, answerAuthor.uid))
 		data_json = json_parser.json_displayQuestionAnswers(None, 
@@ -172,7 +174,7 @@ def deletePost(ID, is_ques):
 		try:
 			question = StackQuora.Questions.objects.get(qid = ID)
 		except ObjectDoesNotExist:
-			return HttpResponse("qID no longer exist in the database.")
+			return HttpResponseBadRequest("qID no longer exist in the database.")
 		
 		try:
 			answers = StackQuora.Answers.objects.filter(parentid = question.qid)
@@ -198,7 +200,7 @@ def deletePost(ID, is_ques):
 		try:
 			answer = StackQuora.Answers.objects.get(aid = ID)
 		except ObjectDoesNotExist:
-			return HttpResponse("aID no longer exist in the database.") 
+			return HttpResponseBadRequest("aID no longer exist in the database.") 
 		answer.delete()
 	return HttpResponse("Successfully deleted!")
 
@@ -213,12 +215,12 @@ def postAnswer(body):
 	try:
 		StackQuora.Users.objects.get(uid = int(answer_content['userID']))
 	except ObjectDoesNotExist:
-		return HttpResponse("No corresponding user exists: {}".format(int(answer_content['userID'])))
+		return HttpResponseBadRequest("No corresponding user exists: {}".format(int(answer_content['userID'])))
 	
 	try:
 		StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
 	except ObjectDoesNotExist:
-		return HttpResponse("No corresponding question exists.")
+		return HttpResponseBadRequest("No corresponding question exists.")
 
 	max_ = StackQuora.Answers.objects.aggregate(Max('aid'))['aid__max']
 	aID = max_ + 1
@@ -237,9 +239,83 @@ def postAnswer(body):
 			, score = score, upvote = upVote, downvote = downVote, 
 			private = private, creationdate = creationDate)
 	except IntegrityError:
-		return HttpResponse("IntegrityError occured, check your pkey.")
+		return HttpResponseBadRequest("IntegrityError occured, check your pkey.")
 
 	return HttpResponse("Answer added.")
 
 
+# getFollowingStatus
+# 	Function to check if one user is following other users specified in targets
+# param:	uID	: an integer of the user to check its following status
+#		targets	: a list of integer contains uIDs for checking if they are followed
+# return:	res	: a list of 0 or 1 indicating if the target is being followed (0: no; 1: yes)
+# note:
+#	If the userID is invalid (not in the database), res will be a list of all 0s
+#	If an userID in targets is invalid, corresponding slot in res will be 0
 
+def getFollowingStatus(uID, targets):
+    # prepare WHERE clause
+    where = " WHERE uid = {} and (".format(uID)
+    for targetID in targets:
+        where += " uidfollowing = {} or ".format(targetID)
+    where += " true = false)" # "true = false" to handle the tailing or
+
+    # raw SQL query
+    query = "SELECT * FROM Following" + where
+
+    status = StackQuora.Following.objects.raw(query)
+
+    res = []
+    for targetID in targets:
+        if any(tup.uidfollowing == targetID for tup in status):
+            res.append(1)
+        else:
+            res.append(0)
+    return res
+
+def getVoteStatus(uID, qIDs, aIDs):
+    # prepare WHERE clause
+    where = " WHERE uid = {} and (".format(uID)
+    for qID in qIDs:
+        where += " (actionid = {} and (actiontype = {} or actiontype = {})) or ".format(qID, 2, 4)
+    for aID in aIDs:
+        where += " (actionid = {} and (actiontype = {} or actiontype = {})) or ".format(aID, 3, 5)
+    where += " true = false)" # "true = false" to handle the tailing or
+
+    # raw SQL query
+    query = "SELECT * FROM ActivityHistory" + where
+
+    status = StackQuora.Activityhistory.objects.raw(query)
+
+    qRes = []
+    aRes = []
+    for qID in qIDs:
+        found = False
+        for res in status:
+            if res.actionid == qID:
+                if res.actiontype == 2 or res.actiontype == 4:
+                    found = True
+                    if res.actiontype == 2:
+                        qRes.append(1)
+                    else:
+                        qRes.append(-1)
+                    break
+        if not found:
+            qRes.append(0)
+
+    for aID in aIDs:
+        found = False
+        for res in status:
+            if res.actionid == aID:
+                if res.actiontype == 3 or res.actiontype == 5:
+                    found = True
+                    if res.actiontype == 3:
+                        aRes.append(1)
+                    else:
+                        aRes.append(-1)
+                    break
+        if not found:
+            aRes.append(0)
+
+
+    return qRes, aRes
