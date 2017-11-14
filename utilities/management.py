@@ -64,7 +64,7 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
             
         if len(res) != 0:
             for vote in res:
-                if(vote.actiontype == 2 or vote.actiontype == 3)
+                if vote.actiontype == 2 or vote.actiontype == 3:
                     data.upvote -= 1
                 else:
                     data.downvote -= 1
