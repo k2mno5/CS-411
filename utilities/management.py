@@ -44,14 +44,42 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
 		return HttpResponseBadRequest("No corresponding Questions/Answers \
 			found in table, something is wrong, \
 			check your record.")
+        newactiontype = 0;
+        if voteStatus == 0:
+            newactiontype = 4 + postType
+        elif voteStatus == 2:
+            newactiontype = 2 + postType
+            
+        query = "SELECT * FROM ActivityHistory WHERE uid = {} and actionid = {} and (actiontype > 1 and actiontype < 6 and actiontype % 2 == {})".format(userID, postID, postType)
 
-	if voteStatus == 0:
-		data.downvote += 1
-	elif voteStatus == 1:
-		data.upvote +=1
-	else:
-		data.downvote = 0
-		data.upvote = 0
+        res = StackQuora.Activityhistory.objects.raw(query)
+        if len(res) == 0 and voteStatus != 1:
+            #query = "INSERT INTO ActivityHistory (uid, actionid, actiontype, time) value ({}, {}, )".format(userID, postID, actiontype)
+            activity = StackQuora.Activityhistory(uid = userID, actionid = postID, actiontype = newactiontype, time = datetime.datetime.utcnow())
+            activity.save()
+            if voteStatus == 0:
+                data.downvote += 1
+            else:
+                data.upvote += 1
+            
+        if len(res) != 0:
+            for vote in res:
+                if(vote.actiontype == 2 or vote.actiontype == 3)
+                    data.upvote -= 1
+                else:
+                    data.downvote -= 1
+                if voteStatus == 1:
+                   vote.delete()
+                    
+                else:
+                    vote.actiontype =  newactiontype
+	#if voteStatus == 0:
+	#	data.downvote += 1
+	#elif voteStatus == 2:
+	#	data.upvote +=1
+	#else:
+	#	data.downvote = 0
+	#	data.upvote = 0
 
 	# update database
 	data.save()

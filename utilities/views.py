@@ -65,6 +65,7 @@ def deletePost(request, ID, is_ques):
 
 
 # get following status by Luo
+@csrf_exempt
 def getFollowingStatus(request):
     jsonBody = json.loads(request.body)
 
@@ -97,6 +98,7 @@ def getFollowingStatus(request):
     return JsonResponse(res_dict)
 
 # get vote status by luo
+@csrf_exempt
 def getVoteStatus(request):
     jsonBody = json.loads(request.body)
 
