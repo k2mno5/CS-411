@@ -50,10 +50,18 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
         elif voteStatus == 2:
             newactiontype = 2 + postType
             
-        query = "SELECT * FROM ActivityHistory WHERE uid = {} and actionid = {} and (actiontype > 1 and actiontype < 6 and actiontype % 2 == {})".format(userID, postID, postType)
+        # query = "SELECT * FROM ActivityHistory WHERE uid = {} and actionid = {} and (actiontype > 1 and actiontype < 6 and actiontype % 2 == {})".format(userID, postID, postType)
 
-        res = StackQuora.Activityhistory.objects.raw(query)
-        if len(res) == 0 and voteStatus != 1:
+	# suggestion, instead of using raw query set, maybe:
+	query_res = StackQuora.Activityhistory.objects.filter(uid = userID, actionid = postID)
+	res = []
+	for an_result in query_res:
+		if an_result.actiontype >1 and an_result.actiontype < 6 and an_result.actiontype % 2 == postType:
+			res.append(an_result) 	
+
+	
+        # res = StackQuora.Activityhistory.objects.raw(query)
+        if len(res) == 0  and voteStatus != 1:
             #query = "INSERT INTO ActivityHistory (uid, actionid, actiontype, time) value ({}, {}, )".format(userID, postID, actiontype)
             activity = StackQuora.Activityhistory(uid = userID, actionid = postID, actiontype = newactiontype, time = datetime.datetime.utcnow())
             activity.save()
