@@ -7,4 +7,5 @@ urlpatterns = [
     url(r'^user/following/checkList$',views.getFollowingStatus),
     url(r'^post/vote/checkList$',views.getVoteStatus),
     url(r'^user/status/(?P<userID>[0-9]+)',views.getUserStatus),
+    url(r'^user/following/(?P<userID>[0-9]+)/(?P<page>[0-9]+)', views.getFollowingActivities),
 ]

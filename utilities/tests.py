@@ -162,6 +162,24 @@ class ManagementTestCase(TestCase):
         self.assertEquals(res["recentActivities"], [])
 
 
+    # ==================== getFollowingActivities Function =============================
+    def testGetFollowingActivities(self):
+        pageOffset = 0
+        # user has following
+        uID = 1
+        res = management.getFollowingActivities(uID, pageOffset)
+
+        self.assertEquals(res["uIDs"], [2, 3, 2])
+        self.assertEquals(res["recentActivities"], [{'postID': 2, 'actionType': 1, 'postType': 1, 'time': '2017-11-11 21:44:38'}, {'postID': 2, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:30:30'}, {'postID':1, 'actionType':0, 'postType':1, 'time': '2017-11-11 21:30:07'}])
+
+        # user has no following
+        uID = 4
+        res = management.getFollowingActivities(uID, pageOffset)
+
+        self.assertEquals(res["uIDs"], [])
+        self.assertEquals(res["recentActivities"], [])
+
+
 
 class ViewTestCase(TestCase):
     def setUp(self):
@@ -234,6 +252,35 @@ class ViewTestCase(TestCase):
         # unmatched type
         userID = "abc"
         res = views.getUserStatus(self.request, userID)
+        self.assertEqual(res.content, 'Field type does not match')
+        self.assertEqual(res.status_code, 400)
+
+
+    # =================== getFollowingActivities API ====================
+    def testValidGetFollowingActivities(self):
+        ref = {'page':0, 'uIDs':[2,3,2], 'recentActivities':[{'postID': 2, 'actionType': 1, 'postType': 1, 'time': '2017-11-11 21:44:38'}, {'postID': 2, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:30:30'}, {'postID':1, 'actionType':0, 'postType':1, 'time': '2017-11-11 21:30:07'}]}
+
+        userID = "1"
+        page = "0"
+        res = views.getFollowingActivities(self.request, userID, page)
+        self.assertEqual(json.loads(res.content), ref)
+
+    def testInvalidGetFollowingActivities(self):
+        userID = "7"
+        page = "0"
+        res = views.getFollowingActivities(self.request, userID, page)
+        self.assertEqual(res.content, 'Invalid User ID')
+        self.assertEqual(res.status_code, 400)
+
+        # invalid page
+        page = "-2"
+        res = views.getFollowingActivities(self.request, userID, page)
+        self.assertEqual(res.content, 'Invalid page offset')
+        self.assertEqual(res.status_code, 400)
+
+        # unmatched type
+        page = "abc"
+        res = views.getFollowingActivities(self.request, userID, page)
         self.assertEqual(res.content, 'Field type does not match')
         self.assertEqual(res.status_code, 400)
 

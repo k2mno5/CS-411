@@ -127,3 +127,16 @@ def getUserStatus(uID):
     res = {"userName":userStatus.username, "following":userStatus.following, "follower":userStatus.follower, "reputation":userStatus.reputation, "lastLogin": userStatus.lastlogin.strftime(TIME_FORMAT), "recentActivities": userActivities["recentActivities"]}
     return res
         
+def getFollowingActivities(uID, page):
+    try:
+        StackQuora.Users.objects.get(uid = uID)
+    except ObjectDoesNotExist:
+        return None
+
+    following = StackQuora.Following.objects.filter(uid = uID)
+    followingUIDs = []
+    for relation in following:
+        followingUIDs.append(relation.uidfollowing)
+
+    res = getUserActivities(followingUIDs, pageOffset = page, showDownVote = False)
+    return res
