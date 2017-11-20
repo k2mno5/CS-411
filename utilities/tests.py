@@ -12,7 +12,7 @@ from . import views
 # Create your tests here.
 class ManagementTestCase(TestCase):
     def setUp(self):
-        return
+        self.maxDiff = None
 
     # =================== getFollowingStatus Function ========================
     # a series of tests for getFollowingStatus
@@ -106,7 +106,7 @@ class ManagementTestCase(TestCase):
     def testValidUserStatus(self):
         uID = 6
         res = management.getUserStatus(uID)
-        activityRef = management.getUserActivities([uID], 10, 1, True)
+        activityRef = management.getUserActivities([uID], 10, 0, True)
 
         self.assertEquals(res, {"userName":"Aya", "following":4, "follower":0, "reputation":0, "lastLogin": "2017-11-11 21:20:00", "recentActivities": activityRef["recentActivities"]})
 
@@ -123,28 +123,28 @@ class ManagementTestCase(TestCase):
     def testUserActivities(self):
         # one user
         uIDs = [6]
-        pageOffset = 1
+        pageOffset = 0
         numOfPost = 3
         showDownVote = True
         res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
         
         self.assertEquals(res["uIDs"], [6, 6, 6])
-        self.assertEquals(res["recentActivities"], [{'postID': 2, 'actionType': 2, 'postType': 1, 'time': '2017-11-11 21:44:55'}, {'postID': 3, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:31:16'}, {'postID': 4, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:27:39'}])
+        self.assertEquals(res["recentActivities"], [ {'postID': 2, 'actionType': 1, 'postType': 0, 'time': '2017-11-12 12:17:51'}, {'postID': 2, 'actionType': 2, 'postType': 1, 'time': '2017-11-11 21:44:55'}, {'postID': 3, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:31:16'}])
 
         # with offset
-        pageOffset = 2
+        pageOffset = 1
         res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
 
         self.assertEquals(res["uIDs"], [6])
         self.assertEquals(res["recentActivities"], [{'postID':4, 'actionType':0, 'postType':0, 'time': '2017-11-11 21:27:39'}] )
 
         # with downvote filter
-        pageOffset = 1
+        pageOffset = 0
         showDownVote = False
         res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
 
         self.assertEquals(res["uIDs"], [6, 6, 6])
-        self.assertEquals(res["recentActivities"], [{'postID': 3, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:31:16'}, {'postID': 4, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:27:39'}, {'postID':4, 'actionType':0, 'postType':0, 'time': '2017-11-11 21:27:39'}])
+        self.assertEquals(res["recentActivities"], [{'postID': 2, 'actionType': 1, 'postType': 0, 'time': '2017-11-12 12:17:51'}, {'postID': 3, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:31:16'}, {'postID': 4, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:27:39'}])
 
         # multiple user
         uIDs = [1, 2, 3]
@@ -165,6 +165,7 @@ class ManagementTestCase(TestCase):
 
 class ViewTestCase(TestCase):
     def setUp(self):
+        self.maxDiff = None
         self.request = lambda: None
 
 
@@ -218,7 +219,7 @@ class ViewTestCase(TestCase):
 
     # ===================== getUserStatus API =========================
     def testValidGetUserStatus(self):
-        ref = {'userName': 'Alice', 'lastLogin': '2017-11-11 21:15:56', 'follower': 3, 'reputation': 1, 'recentActivities': [{'postID': 1, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:25:05'}, {'postID': 2, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:25:29'}], 'following': 2}
+        ref = {'userName': 'Alice', 'lastLogin': '2017-11-11 21:15:56', 'follower': 3, 'reputation': 1, 'recentActivities': [{'postID': 2, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:25:29'}, {'postID': 1, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:25:05'} ], 'following': 2}
         
         userID = "1"
         res = views.getUserStatus(self.request, userID)

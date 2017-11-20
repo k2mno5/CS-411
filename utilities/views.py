@@ -21,6 +21,21 @@ from . import management
 def index(request):
     return HttpResponse("ABC")
 
+def getUserStatus(request, userID):
+    uID = -1
+    try:
+        uID = int(userID)
+    except:
+        return HttpResponseBadRequest('Field type does not match')
+
+    res = management.getUserStatus(userID)
+
+    if res is None:
+        return HttpResponseBadRequest('Invalid User ID')
+    else:
+        return JsonResponse(res)
+
+
 def getFollowingStatus(request):
     jsonBody = json.loads(request.body)
 
