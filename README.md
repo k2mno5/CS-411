@@ -1,5 +1,5 @@
 # CS-411
-[![Build Status](https://semaphoreci.com/api/v1/projects/72100769-7cea-4fdb-be54-dc5f7829c3dc/1600858/badge.svg)](https://semaphoreci.com/stackquora411/cs-411)
+[![Build Status](https://semaphoreci.com/api/v1/projects/72100769-7cea-4fdb-be54-dc5f7829c3dc/1600858/badge.svg)](https://semaphoreci.com/stackquora411/cs-411) ![Code Coverage](https://github.com/k2mno5/CS-411/blob/develop/coverage.svg)
 
 ## Please work on your own branch (or forked repo) for local development
 * Implementing functionalities and updates on your branch
