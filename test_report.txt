@@ -1,0 +1,8 @@
+Name                      Stmts   Miss  Cover   Missing
+-------------------------------------------------------
+utilities/management.py      95      2    98%   82, 94
+utilities/views.py           91      3    97%   22, 109-110
+-------------------------------------------------------
+TOTAL                       530      5    99%
+
+7 files skipped due to complete coverage.
