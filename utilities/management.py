@@ -21,6 +21,8 @@ import json
 # logger for management module
 stdlogger = logging.getLogger(__name__)
 
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 # ================= Functions and APIs ====================
 
 # getFollowingStatus
@@ -98,3 +100,43 @@ def getVoteStatus(uID, qIDs, aIDs):
 
 
     return qRes, aRes
+
+
+def getUserActivities(uIDs, numOfPost=10, pageOffset=0, showDownVote=True):
+    actionRange = 3
+    if showDownVote:
+        actionRange = 5
+    activities = StackQuora.Activityhistory.objects.filter(uid__in = uIDs, actiontype__lte = actionRange).order_by('-time')[pageOffset*numOfPost:(pageOffset+1)*numOfPost]
+
+    res = {"uIDs":[], "recentActivities":[]}
+    for activity in activities:
+        res["uIDs"].append(activity.uid)
+        res["recentActivities"].append({"postID":activity.actionid, "postType":activity.actiontype%2, "actionType":activity.actiontype/2, "time":activity.time.strftime(TIME_FORMAT)})
+
+    return res
+
+def getUserStatus(uID):
+    userStatus = None
+    try:
+        userStatus = StackQuora.Users.objects.get(uid = uID)
+    except ObjectDoesNotExist:
+        return None
+
+    userActivities = getUserActivities([uID])
+
+    res = {"userName":userStatus.username, "following":userStatus.following, "follower":userStatus.follower, "reputation":userStatus.reputation, "lastLogin": userStatus.lastlogin.strftime(TIME_FORMAT), "recentActivities": userActivities["recentActivities"]}
+    return res
+        
+def getFollowingActivities(uID, page):
+    try:
+        StackQuora.Users.objects.get(uid = uID)
+    except ObjectDoesNotExist:
+        return None
+
+    following = StackQuora.Following.objects.filter(uid = uID)
+    followingUIDs = []
+    for relation in following:
+        followingUIDs.append(relation.uidfollowing)
+
+    res = getUserActivities(followingUIDs, pageOffset = page, showDownVote = False)
+    return res

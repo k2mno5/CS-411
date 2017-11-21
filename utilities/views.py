@@ -21,6 +21,41 @@ from . import management
 def index(request):
     return HttpResponse("ABC")
 
+def getFollowingActivities(request, userID, page):
+    uID = -1
+    pageOffset = -1
+    try:
+        uID = int(userID)
+        pageOffset = int(page)
+    except:
+        return HttpResponseBadRequest('Field type does not match')
+
+    if pageOffset < 0:
+        return HttpResponseBadRequest('Invalid page offset')
+
+    res = management.getFollowingActivities(uID, pageOffset)
+
+    if res is None:
+        return HttpResponseBadRequest('Invalid User ID')
+    else:
+        res['page'] = pageOffset
+        return JsonResponse(res)
+
+def getUserStatus(request, userID):
+    uID = -1
+    try:
+        uID = int(userID)
+    except:
+        return HttpResponseBadRequest('Field type does not match')
+
+    res = management.getUserStatus(userID)
+
+    if res is None:
+        return HttpResponseBadRequest('Invalid User ID')
+    else:
+        return JsonResponse(res)
+
+
 def getFollowingStatus(request):
     jsonBody = json.loads(request.body)
 
