@@ -115,16 +115,20 @@ def getUserActivities(uIDs, numOfPost=10, pageOffset=0, showDownVote=True):
 
     return res
 
-def getUserStatus(uID):
+def getUserStatus(uID, showActivities):
     userStatus = None
     try:
         userStatus = StackQuora.Users.objects.get(uid = uID)
     except ObjectDoesNotExist:
         return None
 
-    userActivities = getUserActivities([uID])
 
-    res = {"userName":userStatus.username, "following":userStatus.following, "follower":userStatus.follower, "reputation":userStatus.reputation, "lastLogin": userStatus.lastlogin.strftime(TIME_FORMAT), "recentActivities": userActivities["recentActivities"]}
+    res = {"userName":userStatus.username, "following":userStatus.following, "follower":userStatus.follower, "reputation":userStatus.reputation, "lastLogin": userStatus.lastlogin.strftime(TIME_FORMAT)}
+
+    if showActivities:
+        userActivities = getUserActivities([uID])
+        res["recentActivities"] = userActivities["recentActivities"]
+
     return res
         
 def getFollowingActivities(uID, page):

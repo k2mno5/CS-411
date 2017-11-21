@@ -104,16 +104,24 @@ class ManagementTestCase(TestCase):
     # ================= getUserStatus Function ===================
     # TODO: needs user that has more than 10 activities to test if getting 10 most recent activities
     def testValidUserStatus(self):
+        # test getting verbose user status
         uID = 6
-        res = management.getUserStatus(uID)
+        showActivities = True
+
+        res = management.getUserStatus(uID, showActivities)
         activityRef = management.getUserActivities([uID], 10, 0, True)
 
         self.assertEquals(res, {"userName":"Aya", "following":4, "follower":0, "reputation":0, "lastLogin": "2017-11-11 21:20:00", "recentActivities": activityRef["recentActivities"]})
 
+        # test getting simply user status
+        showActivities = False
+        res = management.getUserStatus(uID, showActivities)
+
+        self.assertEquals(res, {"userName":"Aya", "following":4, "follower":0, "reputation":0, "lastLogin": "2017-11-11 21:20:00"})
 
     def testInvalidUserStatus(self):
         uID = 7
-        self.assertEquals(management.getUserStatus(uID), None)
+        self.assertEquals(management.getUserStatus(uID, True), None)
         
 
 
@@ -240,18 +248,26 @@ class ViewTestCase(TestCase):
         ref = {'userName': 'Alice', 'lastLogin': '2017-11-11 21:15:56', 'follower': 3, 'reputation': 1, 'recentActivities': [{'postID': 2, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:25:29'}, {'postID': 1, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:25:05'} ], 'following': 2}
         
         userID = "1"
-        res = views.getUserStatus(self.request, userID)
+        showActivities = "1"
+        res = views.getUserStatus(self.request, userID, showActivities)
         self.assertEqual(json.loads(res.content), ref)
+
+        # don't show activities
+        reff = {'userName': 'Alice', 'lastLogin': '2017-11-11 21:15:56', 'follower': 3, 'reputation': 1, 'following': 2}
+        showActivities = "0"
+        ress = views.getUserStatus(self.request, userID, showActivities)
+        self.assertEqual(json.loads(ress.content), reff)
 
     def testInvalidGetUserStatus(self):
         userID = "7"
-        res = views.getUserStatus(self.request, userID)
+        showActivities = "1"
+        res = views.getUserStatus(self.request, userID, showActivities)
         self.assertEqual(res.content, 'Invalid User ID')
         self.assertEqual(res.status_code, 400)
 
         # unmatched type
         userID = "abc"
-        res = views.getUserStatus(self.request, userID)
+        res = views.getUserStatus(self.request, userID, showActivities)
         self.assertEqual(res.content, 'Field type does not match')
         self.assertEqual(res.status_code, 400)
 
@@ -265,6 +281,9 @@ class ViewTestCase(TestCase):
         res = views.getFollowingActivities(self.request, userID, page)
         self.assertEqual(json.loads(res.content), ref)
 
+
+    # TODO: remove unnecessary field type or valid value checking (also in other test cases)
+    # since the regex in url.py has actually check the correctness (only in the case that parameters are in url)
     def testInvalidGetFollowingActivities(self):
         userID = "7"
         page = "0"
