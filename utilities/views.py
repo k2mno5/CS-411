@@ -41,14 +41,17 @@ def getFollowingActivities(request, userID, page):
         res['page'] = pageOffset
         return JsonResponse(res)
 
-def getUserStatus(request, userID):
+def getUserStatus(request, userID, showActivities):
     uID = -1
+    showAct = True
     try:
         uID = int(userID)
+        if int(showActivities) == 0:
+            showAct = False
     except:
         return HttpResponseBadRequest('Field type does not match')
 
-    res = management.getUserStatus(userID)
+    res = management.getUserStatus(userID, showAct)
 
     if res is None:
         return HttpResponseBadRequest('Invalid User ID')
