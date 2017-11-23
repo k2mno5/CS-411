@@ -9,4 +9,5 @@ urlpatterns = [
     url(r'^user/status/(?P<userID>[0-9]+)/(?P<showActivities>[01]{1})',views.getUserStatus),
     url(r'^user/following/(?P<userID>[0-9]+)/(?P<page>[0-9]+)', views.getFollowingActivities),
     url(r'^user/(?P<requestType>followings|followers)/(?P<userID>[0-9]+)/(?P<page>[0-9]+)/(?P<showDetail>[01]{1})', views.getFollows),
+    url(r'^user/filteredTimeline/(?P<userID>[0-9]+)/(?P<postType>[0-2]{1})/(?P<actionType>[0-3]{1})/(?P<page>[0-9]+)', views.getCertainActivities),
 ]

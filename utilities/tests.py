@@ -109,7 +109,7 @@ class ManagementTestCase(TestCase):
         showActivities = True
 
         res = management.getUserStatus(uID, showActivities)
-        activityRef = management.getUserActivities([uID], 10, 0, True)
+        activityRef = management.getUserActivities([uID], 10, 0, (1<<0 | 1<<1 | 1<<2))
 
         self.assertEquals(res, {"userName":"Aya", "following":4, "follower":0, "reputation":0, "lastLogin": "2017-11-11 21:20:00", "recentActivities": activityRef["recentActivities"]})
 
@@ -135,23 +135,23 @@ class ManagementTestCase(TestCase):
         uIDs = [6]
         pageOffset = 0
         numOfPost = 3
-        showDownVote = True
-        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
+        showActionType = (1<<0 | 1<<1 | 1<<2)
+        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showActionType)
         
         self.assertEquals(res["uIDs"], [6, 6, 6])
         self.assertEquals(res["recentActivities"], [ {'postID': 2, 'actionType': 1, 'postType': 0, 'time': '2017-11-12 12:17:51'}, {'postID': 2, 'actionType': 2, 'postType': 1, 'time': '2017-11-11 21:44:55'}, {'postID': 3, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:31:16'}])
 
         # with offset
         pageOffset = 1
-        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
+        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showActionType)
 
         self.assertEquals(res["uIDs"], [6])
         self.assertEquals(res["recentActivities"], [{'postID':4, 'actionType':0, 'postType':0, 'time': '2017-11-11 21:27:39'}] )
 
         # with downvote filter
         pageOffset = 0
-        showDownVote = False
-        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
+        showActionType = (1<<0 | 1<<1)
+        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showActionType)
 
         self.assertEquals(res["uIDs"], [6, 6, 6])
         self.assertEquals(res["recentActivities"], [{'postID': 2, 'actionType': 1, 'postType': 0, 'time': '2017-11-12 12:17:51'}, {'postID': 3, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:31:16'}, {'postID': 4, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:27:39'}])
@@ -159,14 +159,14 @@ class ManagementTestCase(TestCase):
         # multiple user
         uIDs = [1, 2, 3]
         numOfPost = 4
-        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
+        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showActionType)
         
         self.assertEquals(res["uIDs"], [2, 3, 2, 1])
         self.assertEquals(res["recentActivities"], [{'postID': 2, 'actionType': 1, 'postType': 1, 'time': '2017-11-11 21:44:38'}, {'postID': 2, 'actionType': 0, 'postType': 1, 'time': '2017-11-11 21:30:30'}, {'postID':1, 'actionType':0, 'postType':1, 'time': '2017-11-11 21:30:07'}, {'postID': 2, 'actionType': 0, 'postType': 0, 'time': '2017-11-11 21:25:29'}])
 
         # user with no activities
         uIDs = [4]
-        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showDownVote)
+        res = management.getUserActivities(uIDs, numOfPost, pageOffset, showActionType)
 
         self.assertEquals(res["uIDs"], [])
         self.assertEquals(res["recentActivities"], [])
@@ -241,6 +241,24 @@ class ManagementTestCase(TestCase):
 
         self.assertEquals(res["uIDs"], [])
         self.assertEquals(res["recentActivities"], [])
+
+
+    # ================= getPosts Function ===========================
+    def testGetPosts(self):
+        postIDs = [1]
+        postTypes = [0]
+
+        ref = [{"postID": 1, "userID": 1, "author": "Alice", "reputation": 1, "body": "This post is about Python.", "upVotes": 0, "downVotes": 0, "creationDate": "2017-11-11 21:25:05"}]
+        res = management.getPosts(postIDs, postTypes)
+        self.assertEquals(res, ref)
+
+    # ================= getCertainActivities Function ==============
+    def testGetCertainActivities(self):
+        # get all user#6's questions and answers
+        ref = {'recentActivities': [{"postID":3, "postType":1, "actionType":0, "time":"2017-11-11 21:31:16"}, {"postID":4, "postType":0, "actionType":0, "time":"2017-11-11 21:27:39"}], "postDetail": [{"postID": 3, "userID": 6, "author": "Aya", "reputation": 0, "body": "Answer to the poor Java question.", "upVotes": 0, "downVotes": 0, "creationDate": "2017-11-11 21:31:16"}, {"postID": 4, "userID": 6, "author": "Aya", "reputation": 0, "body": "This post is a C question from main user.", "upVotes": 0, "downVotes": 0, "creationDate": "2017-11-11 21:27:39"}]}
+        res = management.getCertainActivities(6, 2, 0, 0)
+        self.assertEquals(res, ref)
+
 
 
 
@@ -378,6 +396,15 @@ class ViewTestCase(TestCase):
 
         ref = {"page": 0, "uIDs":[], "userStatus":[]}
         res = views.getFollows(self.request, requestType, userID, page, showDetail)
+        self.assertEquals(json.loads(res.content), ref)
+
+
+    # =============== getCertainActivites API ======================
+    def testGetCertainActivities(self):
+        res = views.getCertainActivities(self.request, "6", "2", "0", "0")
+
+        ref = {'recentActivities': [{"postID":3, "postType":1, "actionType":0, "time":"2017-11-11 21:31:16"}, {"postID":4, "postType":0, "actionType":0, "time":"2017-11-11 21:27:39"}], "postDetail": [{"postID": 3, "userID": 6, "author": "Aya", "reputation": 0, "body": "Answer to the poor Java question.", "upVotes": 0, "downVotes": 0, "creationDate": "2017-11-11 21:31:16"}, {"postID": 4, "userID": 6, "author": "Aya", "reputation": 0, "body": "This post is a C question from main user.", "upVotes": 0, "downVotes": 0, "creationDate": "2017-11-11 21:27:39"}], 'page': 0}
+
         self.assertEquals(json.loads(res.content), ref)
 
        
