@@ -128,6 +128,8 @@ class ManagementTestCase(TestCase):
     # ================== getUserActivities Function ===============
     # This is internal function, thus no edge case checking, please make sure
     # to invoke it with valid parameter
+    # Notice that pageOffset is not included in return value because this is known as input
+    # For including it should be done at interface level
     def testUserActivities(self):
         # one user
         uIDs = [6]
@@ -168,6 +170,59 @@ class ManagementTestCase(TestCase):
 
         self.assertEquals(res["uIDs"], [])
         self.assertEquals(res["recentActivities"], [])
+
+    # =================== getFollows (getFollowing & getFollower) Function ================================
+    # they are essentially the same
+    # TODO: For now, only use getUserStatus if showDetail is True. But this may not be efficient, let's see
+    def testGetFollowingOrFollower(self):
+        # simple following
+        uID = 1
+        following = True
+        page = 0
+        showDetail = False
+        # TODO: should we add date as another field in following table such that we can sort the display
+        #       by time? eg. the lastest following/follower is displayed first
+        #       Right now we are sorting by ID to make sure the return value is determined
+        followingRef = {'uIDs': [2, 3]}
+        res = management.getFollows(uID, page, following, showDetail)
+        self.assertEquals(res, followingRef)
+
+        # detail following
+        showDetail = True
+        followingRef['userStatus'] = [{"userName": "Javis", "following": 2, "follower": 3, "reputation": 0, "lastLogin":"2017-11-11 21:16:26"}, {"userName":"Emily", "following": 2, "follower": 3, "reputation": 0, "lastLogin": "2017-11-11 21:17:04"}]
+        res = management.getFollows(uID, page, following, showDetail)
+        self.assertEquals(res, followingRef)
+
+        # page to 1 (should have no record)
+        page = 1
+        followingRef['uIDs'] = []
+        followingRef['userStatus'] = []
+        res = management.getFollows(uID, page, following, showDetail)
+        self.assertEquals(res, followingRef)
+
+        # simple follower
+        uID = 1
+        following = False
+        page = 0
+        showDetail = False
+
+        followerRef = {'uIDs':[2, 3, 6]}
+        res = management.getFollows(uID, page, following, showDetail)
+        self.assertEquals(res, followerRef)
+
+        # detail follower
+        showDetail = True
+
+        followerRef['userStatus'] = [{"userName": "Javis", "following": 2, "follower": 3, "reputation": 0, "lastLogin":"2017-11-11 21:16:26"}, {"userName":"Emily", "following": 2, "follower": 3, "reputation": 0, "lastLogin": "2017-11-11 21:17:04"}, {"userName": "Aya", "following": 4, "follower": 0, "reputation": 0, "lastLogin":"2017-11-11 21:20:00"}]
+        res = management.getFollows(uID, page, following, showDetail)
+        self.assertEquals(res, followerRef)
+
+        # test invalid
+        uID = 7
+        res = management.getFollows(uID, page, following, showDetail)
+        self.assertEquals(res, {'uIDs': [], 'userStatus':[]})
+
+        
 
 
     # ==================== getFollowingActivities Function =============================
@@ -302,6 +357,28 @@ class ViewTestCase(TestCase):
         res = views.getFollowingActivities(self.request, userID, page)
         self.assertEqual(res.content, 'Field type does not match')
         self.assertEqual(res.status_code, 400)
+
+
+    # ================= getFollows API =============================
+    def testValidGetFollows(self):
+        userID = "1"
+        page = "0"
+        showDetail = "1"
+        requestType = "followings"
+
+        ref = {'page': 0, 'uIDs': [2, 3], 'userStatus':[{"userName": "Javis", "following": 2, "follower": 3, "reputation": 0, "lastLogin":"2017-11-11 21:16:26"}, {"userName":"Emily", "following": 2, "follower": 3, "reputation": 0, "lastLogin": "2017-11-11 21:17:04"}] }
+        res = views.getFollows(self.request, requestType, userID, page, showDetail)
+        self.assertEquals(json.loads(res.content), ref)
+
+    def testInvalidGetFollows(self):
+        userID = "7"
+        page = "0"
+        showDetail = "1"
+        requestType = "followers"
+
+        ref = {"page": 0, "uIDs":[], "userStatus":[]}
+        res = views.getFollows(self.request, requestType, userID, page, showDetail)
+        self.assertEquals(json.loads(res.content), ref)
 
        
  

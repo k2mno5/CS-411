@@ -144,3 +144,27 @@ def getFollowingActivities(uID, page):
 
     res = getUserActivities(followingUIDs, pageOffset = page, showDownVote = False)
     return res
+
+
+def getFollows(uID, pageOffset, following, showDetail, numOfUsers = 20):
+    uIDs = []
+    follows = None
+    if following:
+        follows = StackQuora.Following.objects.filter(uid = uID).order_by('uidfollowing')[pageOffset*numOfUsers:(pageOffset+1)*numOfUsers]
+    else:
+        follows = StackQuora.Following.objects.filter(uidfollowing = uID).order_by('uid')[pageOffset*numOfUsers:(pageOffset+1)*numOfUsers]
+
+    for follow in follows:
+        if follow.uid == uID:
+            uIDs.append(follow.uidfollowing)
+        else:
+            uIDs.append(follow.uid)
+
+    res = {'uIDs': uIDs}
+    if showDetail:
+        res['userStatus'] = []
+        for ID in uIDs:
+            detail = getUserStatus(ID, False)
+            res['userStatus'].append(detail)
+    return res
+

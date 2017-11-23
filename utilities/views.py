@@ -128,3 +128,19 @@ def getVoteStatus(request):
     for status in aRes:
         res_dict['answer_voted_status'].append(status)
     return JsonResponse(res_dict)
+
+
+def getFollows(request, requestType, userID, page, showDetail):
+    try:
+        uID = int(userID)
+        pageOffset = int(page)
+        returnDetail = True
+        if showDetail == "0":
+            returnDetail = False
+
+        res = management.getFollows(uID, pageOffset, (requestType == "followings"), returnDetail)
+        res['page'] = pageOffset
+        return JsonResponse(res)
+    except:
+        # this should never happend since regex makes sure that parameters can be parsed to corresponding type
+        return HttpResponseBadeRequest('Invalid User ID')
