@@ -176,3 +176,32 @@ def getUserStatus(request, userID, showActivities):
         return HttpResponseBadRequest('Invalid User ID')
     else:
         return JsonResponse(res)
+
+def getFollows(request, requestType, userID, page, showDetail):
+    try:
+        uID = int(userID)
+        pageOffset = int(page)
+        returnDetail = True
+        if showDetail == "0":
+            returnDetail = False
+
+        res = management.getFollows(uID, pageOffset, (requestType == "followings"), returnDetail)
+        res['page'] = pageOffset
+        return JsonResponse(res)
+    except:
+        # this should never happend since regex makes sure that parameters can be parsed to corresponding type
+        return HttpResponseBadRequest('Field type does not match')
+
+
+def getCertainActivities(request, userID, postType, actionType, page):
+    try:
+        uID = int(userID)
+        post = int(postType)
+        action = int(actionType)
+        pageOffset = int(page)
+        res = management.getCertainActivities(uID, post, action, pageOffset)
+        res['page'] = pageOffset
+        return JsonResponse(res)
+
+    except:
+        return HttpResponseBadRequest('Field type does not match')

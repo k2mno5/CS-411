@@ -105,11 +105,29 @@ def getVoteStatus(uID, qIDs, aIDs):
     return qRes, aRes
 
 
-def getUserActivities(uIDs, numOfPost=10, pageOffset=0, showDownVote=True):
-    actionRange = 3
-    if showDownVote:
-        actionRange = 5
-    activities = StackQuora.Activityhistory.objects.filter(uid__in = uIDs, actiontype__lte = actionRange).order_by('-time')[pageOffset*numOfPost:(pageOffset+1)*numOfPost]
+def getUserActivities(uIDs, numOfPost=10, pageOffset=0, showActionType=7, showPostType = 3):
+    # POST_MASK = 1; UPVOTE_MASK = 2; DOWNVOTE_MASK = 4
+    typeMask = [1, 2, 4]
+
+    # QUESTION_MASK = 1; ANSWER_MASK = 2
+    postMask = [1, 2]
+
+    actionInclude = []
+    postInclude = []
+    for i in range(len(typeMask)):
+        if showActionType & typeMask[i] != 0:
+            actionInclude.append(i)
+    for i in range(len(postMask)):
+        if showPostType & postMask[i] != 0:
+            postInclude.append(i)
+
+    # generate the range of action types that the return should include
+    actionRange = []
+    for i in actionInclude:
+        for j in postInclude:
+            actionRange.append( i * len(postMask) + j )
+
+    activities = StackQuora.Activityhistory.objects.filter(uid__in = uIDs, actiontype__in = actionRange).order_by('-time')[pageOffset*numOfPost:(pageOffset+1)*numOfPost]
 
     res = {"uIDs":[], "recentActivities":[]}
     for activity in activities:
@@ -145,7 +163,73 @@ def getFollowingActivities(uID, page):
     for relation in following:
         followingUIDs.append(relation.uidfollowing)
 
-    res = getUserActivities(followingUIDs, pageOffset = page, showDownVote = False)
+    res = getUserActivities(followingUIDs, pageOffset = page, showActionType = (1<<0 | 1<<1))
+    return res
+
+
+def getFollows(uID, pageOffset, following, showDetail, numOfUsers = 20):
+    uIDs = []
+    follows = None
+    if following:
+        follows = StackQuora.Following.objects.filter(uid = uID).order_by('uidfollowing')[pageOffset*numOfUsers:(pageOffset+1)*numOfUsers]
+    else:
+        follows = StackQuora.Following.objects.filter(uidfollowing = uID).order_by('uid')[pageOffset*numOfUsers:(pageOffset+1)*numOfUsers]
+
+    for follow in follows:
+        if follow.uid == uID:
+            uIDs.append(follow.uidfollowing)
+        else:
+            uIDs.append(follow.uid)
+
+    res = {'uIDs': uIDs}
+    if showDetail:
+        res['userStatus'] = []
+        for ID in uIDs:
+            detail = getUserStatus(ID, False)
+            res['userStatus'].append(detail)
+    return res
+
+# reinventing the wheel here. If displayQuestionAnswers can be separated into a function for returning http response and the other function for returning gathered data would be helpful
+# this is helper function, thus assuming the len of postIDs and postTypes are the same and they are valid values
+def getPosts(postIDs, postTypes):
+    res = []
+    for i in range(len(postIDs)):
+        # the post is queston
+        post = None
+        if postTypes[i] == 0:
+            post = StackQuora.Questions.objects.get(qid = postIDs[i])
+        else:
+            post = StackQuora.Answers.objects.get(aid = postIDs[i])
+
+        postDetail = {'postID':postIDs[i], 'userID':post.owneruserid, 'body': post.body, 'upVotes':post.upvote, 'downVotes':post.downvote, 'creationDate': post.creationdate.strftime(TIME_FORMAT)}
+
+        # user related information 
+        user = StackQuora.Users.objects.get(uid = post.owneruserid)
+        postDetail['author'] = user.username
+        postDetail['reputation'] = user.reputation
+
+        res.append(postDetail)
+    return res
+
+def getCertainActivities(userID, postType, actionType, page):
+    showPost = 3
+    if postType != 2:
+        showPost = 1 << postType
+
+    showAction = 7
+    if actionType != 3:
+        showAction = 1 << actionType
+    activities = getUserActivities([userID], pageOffset=page, showActionType=showAction, showPostType = showPost)
+    res = {"recentActivities": activities["recentActivities"]}
+
+    # get post detail
+    postIDs = []
+    postTypes = []
+    for activity in res['recentActivities']:
+        postIDs.append(activity["postID"])
+        postTypes.append(activity["postType"])
+
+    res["postDetail"] = getPosts(postIDs, postTypes)
     return res
 
 
