@@ -1,13 +1,13 @@
-...................
+.........................
 ----------------------------------------------------------------------
-Ran 19 tests in 0.037s
+Ran 25 tests in 0.086s
 
 OK
 Name                      Stmts   Miss  Cover   Missing
 -------------------------------------------------------
-utilities/management.py      97      2    98%   82, 94
-utilities/views.py           94      3    97%   22, 112-113
+utilities/management.py     154      3    98%   82, 94, 216
+utilities/views.py          117      8    93%   22, 112-113, 139, 144-146, 159-160
 -------------------------------------------------------
-TOTAL                       545      5    99%
+TOTAL                       686     11    98%
 
 7 files skipped due to complete coverage.
