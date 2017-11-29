@@ -38,6 +38,19 @@ class Answers(models.Model):
         db_table = 'Answers'
 
 
+class Authorization(models.Model):
+    email = models.CharField(primary_key=True, max_length=254)
+    password = models.CharField(max_length=128)
+    token = models.IntegerField(blank=True, null=True)
+    uid = models.IntegerField(db_column='uID')  # Field name made lowercase.
+    lastactive = models.DateTimeField(db_column='lastActive', blank=True, null=True)  # Field name made lowercase.
+    datejoined = models.DateTimeField(db_column='dateJoined', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'Authorization'
+
+
 class Following(models.Model):
     uid = models.IntegerField(db_column='uID', primary_key=True)  # Field name made lowercase.
     uidfollowing = models.IntegerField(db_column='uIDFollowing')  # Field name made lowercase.

@@ -259,7 +259,105 @@ class ManagementTestCase(TestCase):
         res = management.getCertainActivities(6, 2, 0, 0)
         self.assertEquals(res, ref)
 
+    # ================= signUp Function =======================
+    def testSignUp(self):
+        # internal function to clear Authorization table
+        # and to create an user that has expired token and one that don't
+        management.clearAuthorization()
+        
+        # register a user
+        email = "cnmua@gmail.com"
+        password = "laotie666"
 
+        res = management.signup(email, password)
+        self.assertEquals(res, 0)
+
+        # register a registered email (only failure case here)
+        res = management.signup(email, password)
+        self.assertEquals(res, 1)
+
+    # ================ login Function ======================
+    def testLogin(self):
+        # internal function to clear Authorization table
+        # and to create an user that has expired token and one that don't
+        management.clearAuthorization()
+
+        # that user with expired token
+        email = "waduhack@gmail.com"
+        password = "laotie666"
+
+        # on successful login
+        res = management.login(email, password)
+        # user not found
+        self.failIfEqual(res['userID'], -1)
+        # wrong password
+        self.failIfEqual(res['token'], -1)
+
+        # simulate validation process during update activities
+        # see test case for validation for return values and their meanings
+        res = management.validation(res['userID'], res['token'])
+        self.assertEquals(res, 0)
+
+        # test invalid login
+        password = "laotie233"
+
+        res = management.login(email, password)
+        self.failIfEqual(res['userID'], -1)
+        self.assertEquals(res['token'], -1)
+
+        email = "wth@gmail.com"
+        
+        res = management.login(email, password)
+        self.assertEquals(res, {'userID': -1, 'token': -1})
+
+
+    # ===================== resetPassword Function ===============
+    def testReset(self):
+        management.clearAuthorization()
+
+        # wrong password
+        email = "waduhack@gmail.com"
+        password = "laotie233"
+
+        res = management.login(email, password)
+        self.failIfEqual(res['userID'], -1)
+        self.assertEquals(res['token'], -1)
+
+        # reset
+        res = management.reset(email, password)
+        self.assertEquals(res, 0)
+
+        # try login
+        res = management.login(email, password)
+        self.failIfEqual(res['userID'], -1)
+        self.failIfEqual(res['token'], -1)
+
+        # reset false user
+        email = "wth@gmail.com"
+        res = management.reset(email, password)
+        self.assertEquals(res, 1)
+
+        # shouldn't be able to login (this is different from sign up after all)
+        self.assertEquals(management.login(email, password), {'userID':-1, 'token':-1})
+
+
+    # ================== validation Function ==================
+    def testValidation(self):
+        management.clearAuthorization()
+
+        # valid token
+        self.assertEquals(management.validation(6, 12345), 0)
+        # expired token
+        self.assertEquals(management.validation(5, 23456), 1)
+
+
+    # ================ extendToken Function =================
+    # internal function that will be called in login function or update activities when passing validation
+    def testExtendToken(self):
+        management.clearAuthorization()
+        userID = 5
+        management.extendToken(userID)
+        self.assertEquals(management.validation(5, 23456), 0)
 
 
 class ViewTestCase(TestCase):
@@ -407,7 +505,6 @@ class ViewTestCase(TestCase):
 
         self.assertEquals(json.loads(res.content), ref)
 
-       
  
 
 class UtilitiesTestCase(TestCase):
