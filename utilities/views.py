@@ -1,64 +1,81 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.shortcuts import render
 from django.http import *
+from django.http import HttpResponse
 from django.http import JsonResponse
+
+# handle json
+import json
+from django.core import serializers
+
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 
+from models import Questions
+from . import management
 
 import time
 import logging
 
-# handle json
-from django.core import serializers
-import json
 
-from . import management
+# Logger in view module see README to use the logger print here will not work
+stdlogger = logging.getLogger(__name__)
 
-# Create your views here.
+# Default view
 def index(request):
-    return HttpResponse("ABC")
-
-def getFollowingActivities(request, userID, page):
-    uID = -1
-    pageOffset = -1
-    try:
-        uID = int(userID)
-        pageOffset = int(page)
-    except:
-        return HttpResponseBadRequest('Field type does not match')
-
-    if pageOffset < 0:
-        return HttpResponseBadRequest('Invalid page offset')
-
-    res = management.getFollowingActivities(uID, pageOffset)
-
-    if res is None:
-        return HttpResponseBadRequest('Invalid User ID')
-    else:
-        res['page'] = pageOffset
-        return JsonResponse(res)
-
-def getUserStatus(request, userID, showActivities):
-    uID = -1
-    showAct = True
-    try:
-        uID = int(userID)
-        if int(showActivities) == 0:
-            showAct = False
-    except:
-        return HttpResponseBadRequest('Field type does not match')
-
-    res = management.getUserStatus(userID, showAct)
-
-    if res is None:
-        return HttpResponseBadRequest('Invalid User ID')
-    else:
-        return JsonResponse(res)
+    return HttpResponse("If you see this page, Apache httpd and django is running.")
 
 
+# ================= Functions and APIs ====================
+
+# updateVoteStatus wrapper
+# input: Http get_request
+# output: empty http response
+def updateVoteStatus(request, postID, postType, userID, voteStatus):
+    postID = int(postID)
+    postType = int(postType)
+    userID = int(userID)
+    voteStatus = int(voteStatus)
+    return management.updateVoteStatus(postID, postType, userID, voteStatus)
+
+# getUserUpdate wrapper
+# input uID, Http_get_request
+# output: JSON file, schema on github issue
+# @NOTE, in this version, 10 random questions will be return
+#        to return preference related questions, change the
+#        getUserUpdate_random to getUserUpdate, which will be
+#        implemented later on.
+def getUserUpdate_random(request):
+    return management.getUserUpdate_random()
+
+# display question answers
+# input ID, possibly UID or AID, 
+#       ques, specify whether a question an all of its answers will return
+# output json file specified online
+def displayQuestionAnswers(request, qaID, is_ques):
+    return management.displayQuestionAnswers(int(qaID), int(is_ques))
+
+
+# post answer, add an answer to the question
+# input request containing the json file of hte answer
+# output ack
+# side-effect: answer piped into the database
+@csrf_exempt
+def postAnswer(request):
+    return management.postAnswer(request.body)
+
+@csrf_exempt
+def postQuestion(request):
+    return management.postQuestion(request.body)
+
+# delete a post, could be a question or an answer
+def deletePost(request, ID, is_ques):
+    return management.deletePost(int(ID), int(is_ques))
+
+
+# get following status by Luo
+@csrf_exempt
 def getFollowingStatus(request):
     jsonBody = json.loads(request.body)
 
@@ -90,6 +107,8 @@ def getFollowingStatus(request):
             res_dict['following_results'].append("y")
     return JsonResponse(res_dict)
 
+# get vote status by luo
+@csrf_exempt
 def getVoteStatus(request):
     jsonBody = json.loads(request.body)
 
@@ -129,6 +148,42 @@ def getVoteStatus(request):
         res_dict['answer_voted_status'].append(status)
     return JsonResponse(res_dict)
 
+def getFollowingActivities(request, userID, page):
+    uID = -1
+    pageOffset = -1
+    try:
+        uID = int(userID)
+        pageOffset = int(page)
+    except:
+        return HttpResponseBadRequest('Field type does not match')
+
+    if pageOffset < 0:
+        return HttpResponseBadRequest('Invalid page offset')
+
+    res = management.getFollowingActivities(uID, pageOffset)
+
+    if res is None:
+        return HttpResponseBadRequest('Invalid User ID')
+    else:
+        res['page'] = pageOffset
+        return JsonResponse(res)
+
+def getUserStatus(request, userID, showActivities):
+    uID = -1
+    showAct = True
+    try:
+        uID = int(userID)
+        if int(showActivities) == 0:
+            showAct = False
+    except:
+        return HttpResponseBadRequest('Field type does not match')
+
+    res = management.getUserStatus(userID, showAct)
+
+    if res is None:
+        return HttpResponseBadRequest('Invalid User ID')
+    else:
+        return JsonResponse(res)
 
 def getFollows(request, requestType, userID, page, showDetail):
     try:
@@ -158,3 +213,13 @@ def getCertainActivities(request, userID, postType, actionType, page):
 
     except:
         return HttpResponseBadRequest('Field type does not match')
+
+# update followers function, expecting a JSON input
+@csrf_exempt
+def updateFollowers(request):
+    return management.updateFollowers(request.body)
+
+@csrf_exempt
+def updateUserInfo(request):
+    return management.updateUserInfo(request.body)
+
