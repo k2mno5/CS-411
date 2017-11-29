@@ -56,7 +56,6 @@ def getUserUpdate_random(request):
 def displayQuestionAnswers(request, qaID, is_ques):
     return management.displayQuestionAnswers(int(qaID), int(is_ques))
 
-
 # post answer, add an answer to the question
 # input request containing the json file of hte answer
 # output ack
@@ -223,3 +222,12 @@ def updateFollowers(request):
 def updateUserInfo(request):
     return management.updateUserInfo(request.body)
 
+    qRes, aRes = management.getVoteStatus(uID, qIDs, aIDs)
+    res_dict = {}
+    res_dict['question_voted_status'] = []
+    res_dict['answer_voted_status'] = []
+    for status in qRes:
+        res_dict['question_voted_status'].append(status)
+    for status in aRes:
+        res_dict['answer_voted_status'].append(status)
+    return JsonResponse(res_dict)
