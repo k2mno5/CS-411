@@ -6,14 +6,12 @@ import django.db.models
 from django.http import HttpResponse
 from django.http import *
 
-
 # datebase dependency
 from . import models as StackQuora
 from django.db.models import Max
 from random import randint
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
- 
 
 # date processing dependency
 from django.core import serializers
@@ -233,7 +231,6 @@ def getCertainActivities(userID, postType, actionType, page):
 
     res["postDetail"] = getPosts(postIDs, postTypes)
     return res
-
 
 # updateVoteStatus
 # input: post ID, 
