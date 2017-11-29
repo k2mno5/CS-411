@@ -61,6 +61,10 @@ def displayQuestionAnswers(request, qaID, is_ques):
 def postAnswer(request):
     return management.postAnswer(request.body)
 
+@csrf_exempt
+def postQuestion(request):
+    return management.postQuestion(request.body)
+
 # delete a post, could be a question or an answer
 def deletePost(request, ID, is_ques):
     return management.deletePost(int(ID), int(is_ques))
@@ -205,3 +209,12 @@ def getCertainActivities(request, userID, postType, actionType, page):
 
     except:
         return HttpResponseBadRequest('Field type does not match')
+
+# update followers function, expecting a JSON input
+@csrf_exempt
+def updateFollowers(request):
+    return management.updateFollowers(request.body)
+
+@csrf_exempt
+def updateUserInfo(request):
+    return management.updateUserInfo(request.body)

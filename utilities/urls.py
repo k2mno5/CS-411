@@ -12,7 +12,10 @@ urlpatterns = [
     url(r'^displayQuestionAnswers/(?P<qaID>[0-9]+)/(?P<is_ques>[0-1]{1})/$', 
         views.displayQuestionAnswers),
     url(r'^post/postAnswer/$',views.postAnswer),
+    url(r'^post/postQuestion/$',views.postQuestion),
     url(r'^post/deletePost/(?P<ID>[0-9]+)/(?P<is_ques>[0-9]+)/$',views.deletePost),
     url(r'^user/(?P<requestType>followings|followers)/(?P<userID>[0-9]+)/(?P<page>[0-9]+)/(?P<showDetail>[01]{1})', views.getFollows),
     url(r'^user/filteredTimeline/(?P<userID>[0-9]+)/(?P<postType>[0-2]{1})/(?P<actionType>[0-3]{1})/(?P<page>[0-9]+)', views.getCertainActivities),
+    url(r'^user/updateFollowers/$', views.updateFollowers),
+    url(r'^user/updateUserInfo/$', views.updateUserInfo),
 ]

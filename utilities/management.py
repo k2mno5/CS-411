@@ -12,6 +12,8 @@ from . import models as StackQuora
 from django.db.models import Max
 from random import randint
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connection
+ 
 
 # date processing dependency
 from django.core import serializers
@@ -266,11 +268,28 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
         if an_result.actiontype >1 and an_result.actiontype < 6 and an_result.actiontype % 2 == postType:
             res.append(an_result)   
 
-    
+
     # res = StackQuora.Activityhistory.objects.raw(query)
     if len(res) == 0  and voteStatus != 1:
         #query = "INSERT INTO ActivityHistory (uid, actionid, actiontype, time) value ({}, {}, )".format(userID, postID, actiontype)
-        activity = StackQuora.Activityhistory.objects.create(uid = userID, actionid = postID, actiontype = newactiontype, time = datetime.datetime.utcnow())
+        # activity = StackQuora.Activityhistory.objects.create(uid = userID, actionid = postID, 
+        #   actiontype = newactiontype, time = datetime.datetime.utcnow())
+        
+        stdlogger.info("enter loop if statement A")
+
+        uid=userID
+        actionid = postID
+        actiontype = newactiontype
+        time = datetime.datetime.utcnow()
+
+        # cursor used to execute raw query
+        cursor = connection.cursor()
+        query = '''INSERT INTO ActivityHistory (uID, actionID, actionType, time)
+                    VALUES (%s,%s,%s,%s)
+                '''
+
+        cursor.execute(query,[uid,actionid,actiontype,time])
+
         if voteStatus == 0:
             data.downvote += 1
         else:
@@ -283,18 +302,21 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
             else:
                 data.downvote -= 1
             if voteStatus == 1:
-               vote.delete()                
+                uid = userID
+                actionid = postID
+                cursor = connection.cursor()
+                query = '''DELETE FROM ActivityHistory 
+                           WHERE uID = %s and actionID = %s
+                        '''
+                cursor.execute(query,[uid,actionid])
             else:
-                vote.actiontype =  newactiontype
-    #if voteStatus == 0:
-    #   data.downvote += 1
-    #elif voteStatus == 2:
-    #   data.upvote +=1
-    #else:
-    #   data.downvote = 0
-    #   data.upvote = 0
-
-    # update database
+                cursor = connection.cursor()
+                query = '''UPDATE ActivityHistory 
+                           SET actionType = %s
+                           WHERE uID = %s and actionID = %s
+                        '''
+                cursor.execute(query,[newactiontype, userID, postID])
+                # vote.actiontype = newactiontype
     data.save()
 
     # update recommandation system
@@ -443,6 +465,8 @@ def deletePost(ID, is_ques):
         except ObjectDoesNotExist:
             return HttpResponseBadRequest("aID no longer exist in the database.") 
         answer.delete()
+
+    # @TODO add user activity history
     return HttpResponse("Successfully deleted!")
 
 
@@ -482,4 +506,101 @@ def postAnswer(body):
     except IntegrityError:
         return HttpResponseBadRequest("IntegrityError occured, check your pkey.")
 
+    # @TODO add user activity history
+
     return HttpResponse("Answer added.")
+
+# post Question, used to post question from a user
+# this function should only be exposed to user if user is logged in
+# otherwise, exception will be thrown
+def postQuestion(body):
+    inJson = json.loads(body)
+    question_content = inJson['content'] 
+    try:
+        StackQuora.Users.objects.get(uid = int(question_content['userID']))
+    except ObjectDoesNotExist:
+        return HttpResponseBadRequest("No corresponding user exists: {}".format(int(question_content['userID'])))
+    
+    max_ = StackQuora.Questions.objects.aggregate(Max('qid'))['qid__max']
+    
+    qID  = max_+1
+    owneruserID = int(question_content['userID'])
+    creationDate = datetime.datetime.utcnow()
+    title = question_content['title']
+    body = question_content['body']
+    tags = question_content['tags']
+    creationDate = datetime.datetime.utcnow()
+    score = 0
+    upVote = 0
+    downVote = 0
+    private = 0
+
+    # create question leave closedDate to be NULL
+    try:
+        new_question = StackQuora.Questions.objects.create(qid = qID, owneruserid = owneruserID,
+            body = body, score = score, creationdate = creationDate, 
+            upvote = upVote, downvote = downVote, private = private, title = title)
+    except:
+        return HttpResponseBadRequest("IntegrityError occured in question, check your pkey.")
+
+    # if pass, insert tags
+    for tag in tags:
+        stdlogger.info(tag)
+        stdlogger.info(qID)
+        try:
+            new_tag = StackQuora.Tags.objects.create(tid = qID, tags = tag)
+        except:
+            return HttpResponseBadRequest("IntegrityError occured in tags, check your pkey.")
+    
+    # @TODO add user activity history
+
+    return HttpResponse("Question added.")
+
+
+def updateFollowers(body):
+    inJson = json.loads(body)
+    userID = int(inJson['userID'])
+    targetID = int(inJson['targetID'])
+    typ = int(inJson['type'])
+
+    if userID == targetID:
+        return HttpResponse("LOL, user cannot follow himself, loop is not allowed!")
+
+    try:
+        StackQuora.Users.objects.get(uid = userID)
+        StackQuora.Users.objects.get(uid = targetID)        
+    except ObjectDoesNotExist:
+        return HttpResponseBadRequest("Either user or target user doesn't exist.")
+
+    # find if the user is following the target
+    if typ == 1:
+        try:
+            res = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+        except ObjectDoesNotExist:
+            return HttpResponseBadRequest("User-target pair does not exists!")
+        cursor = connection.cursor()
+        query = '''DELETE FROM Following 
+                    WHERE uID = %s and uIDFollowing = %s
+                '''
+        cursor.execute(query,[userID, targetID])
+        return HttpResponse("Successfully deleted pair!")
+    else:
+        try:
+            res = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+        except ObjectDoesNotExist:
+            new_pair = StackQuora.Following.objects.create(uid = userID, uidfollowing = targetID)
+            return HttpResponse("Successfully add pair!")
+    return HttpResponse("Pair already exists!")
+
+def updateUserInfo(body):
+    inJson = json.loads(body)
+    userID = int(inJson['userID'])
+    userName = inJson['userName']
+    try:
+        res = StackQuora.Users.objects.get(uid = userID)
+    except ObjectDoesNotExist:
+        return HttpResponseBadRequest("User doesn't exist.")
+    
+    res.username = userName
+    res.save()
+    return HttpResponse("Successfully update the name!")
