@@ -370,12 +370,12 @@ def getUserUpdate_random():
     "wifi-direct",
     "wifip2p"
 '''
-def displayQuestionAnswers(qaID, is_ques):
+def displayQuestionAnswers(qaID, is_answ):
     data_json = {}
     questionAuther = ()
     aAuthorID = []
     answerAuthors = []
-    if is_ques != 0:
+    if not is_answ:
         # try to get questions specified by qaID
         try:
             req_question = StackQuora.Questions.objects.get(qid = qaID)
@@ -428,9 +428,9 @@ def displayQuestionAnswers(qaID, is_ques):
 # input: ID, qid or aid, is_ques specify whether this is 
 #   an answer or not
 # side effect: delete corresponding database entry
-def deletePost(ID, is_ques):
+def deletePost(ID, is_answ):
     # if deleting a question, all other things has to be deleted
-    if is_ques:
+    if not is_answ:
         stdlogger.info("is question")
         has_answer = True
         has_tag = True
