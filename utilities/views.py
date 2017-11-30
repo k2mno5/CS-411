@@ -1,26 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
 from django.http import *
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
+from models import Questions
+from . import management
+import time
+import logging
 from django.http import JsonResponse
-
-# handle json
 import json
 from django.core import serializers
 
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
-
-from models import Questions
-from . import management
-
-import time
-import logging
 
 
 # Logger in view module see README to use the logger print here will not work
 stdlogger = logging.getLogger(__name__)
+
 
 # Default view
 def index(request):
@@ -219,7 +215,11 @@ def getCertainActivities(request, userID, postType, actionType, page):
 def updateFollowers(request):
     return management.updateFollowers(request.body)
 
+# function that update user name
 @csrf_exempt
 def updateUserInfo(request):
     return management.updateUserInfo(request.body)
 
+# helper function to lookup qid from aid
+def getqIDfromaID(request,aID):
+    return management.getqIDfromaID(int(aID))

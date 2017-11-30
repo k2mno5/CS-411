@@ -612,3 +612,12 @@ def updateUserInfo(body):
     res.username = userName
     res.save()
     return HttpResponse("Successfully update the name!")
+
+# little helper function that gets qID from aID
+# database is indexed on p-key so we are good.
+def getqIDfromaID(aID):
+    try:
+        res = StackQuora.Answers.objects.get(aid = aID)
+    except:
+        return HttpResponseBadRequest("Answer with aID passed in doesn't exists.")
+    return HttpResponse(res.parentid)
