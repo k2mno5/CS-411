@@ -275,8 +275,6 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
         # activity = StackQuora.Activityhistory.objects.create(uid = userID, actionid = postID, 
         #   actiontype = newactiontype, time = datetime.datetime.utcnow())
         
-        stdlogger.info("enter loop if statement A")
-
         uid=userID
         actionid = postID
         actiontype = newactiontype
@@ -305,10 +303,14 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
                 uid = userID
                 actionid = postID
                 cursor = connection.cursor()
+
+                # incase the user reset its own question 
+                # which is highly unlikely, but it can happen.
                 query = '''DELETE FROM ActivityHistory 
                            WHERE uID = %s and actionID = %s
+                           and actionType != %s and actionType !=%s 
                         '''
-                cursor.execute(query,[uid,actionid])
+                cursor.execute(query,[uid,actionid,1,0])
             else:
                 cursor = connection.cursor()
                 query = '''UPDATE ActivityHistory 
@@ -431,7 +433,6 @@ def displayQuestionAnswers(qaID, is_answ):
 def deletePost(ID, is_answ):
     # if deleting a question, all other things has to be deleted
     if not is_answ:
-        stdlogger.info("is question")
         has_answer = True
         has_tag = True
         try:
@@ -450,6 +451,12 @@ def deletePost(ID, is_answ):
             has_tag = False
 
         if has_answer:
+            # delete all answer in activity history
+            for ele in answers:
+                cursor = connection.cursor()
+                query = '''DELETE FROM ActivityHistory 
+                        WHERE actionid = %s '''
+                cursor.execute(query,[ele.aid])
             answers.delete()
 
         if has_tag:
@@ -459,14 +466,18 @@ def deletePost(ID, is_answ):
 
     # else if we are deleting answer
     else:
-        stdlogger.info("is answer only")
         try:
             answer = StackQuora.Answers.objects.get(aid = ID)
         except ObjectDoesNotExist:
             return HttpResponseBadRequest("aID no longer exist in the database.") 
         answer.delete()
 
-    # @TODO add user activity history
+    # chagne user activity history
+    # delete every information related to the post
+    cursor = connection.cursor()
+    query = '''DELETE FROM ActivityHistory 
+            WHERE actionid = %s '''
+    cursor.execute(query,[ID])
     return HttpResponse("Successfully deleted!")
 
 
@@ -506,7 +517,13 @@ def postAnswer(body):
     except IntegrityError:
         return HttpResponseBadRequest("IntegrityError occured, check your pkey.")
 
-    # @TODO add user activity history
+    # add user activity history
+    # cursor used to execute raw query
+    cursor = connection.cursor()
+    query = '''INSERT INTO ActivityHistory (uID, actionID, actionType, time)
+                VALUES (%s,%s,%s,%s)
+            '''
+    cursor.execute(query,[owneruserID,aID,1,creationDate])
 
     return HttpResponse("Answer added.")
 
@@ -545,18 +562,25 @@ def postQuestion(body):
 
     # if pass, insert tags
     for tag in tags:
-        stdlogger.info(tag)
-        stdlogger.info(qID)
         try:
             new_tag = StackQuora.Tags.objects.create(tid = qID, tags = tag)
         except:
             return HttpResponseBadRequest("IntegrityError occured in tags, check your pkey.")
     
-    # @TODO add user activity history
+    # add user activity history
+    # cursor used to execute raw query
+    cursor = connection.cursor()
+    query = '''INSERT INTO ActivityHistory (uID, actionID, actionType, time)
+                VALUES (%s,%s,%s,%s)
+            '''
+    cursor.execute(query,[owneruserID,qID,0,creationDate])
 
     return HttpResponse("Question added.")
 
-
+# function update followers
+# input: userID, targetID, type
+# output: none
+# side-effect: follower-following pair inserted into database
 def updateFollowers(body):
     inJson = json.loads(body)
     userID = int(inJson['userID'])
@@ -600,6 +624,8 @@ def updateFollowers(body):
             return HttpResponse("Successfully add pair!")
     return HttpResponse("Pair already exists!")
 
+# function updates userName, 
+# we only have userName right now
 def updateUserInfo(body):
     inJson = json.loads(body)
     userID = int(inJson['userID'])
