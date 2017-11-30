@@ -17,7 +17,6 @@ class Activityhistory(models.Model):
     time = models.DateTimeField()
 
     class Meta:
-        managed = False
         db_table = 'ActivityHistory'
         unique_together = (('uid', 'actionid', 'actiontype'),)
 
@@ -34,7 +33,6 @@ class Answers(models.Model):
     private = models.IntegerField()
 
     class Meta:
-        managed = False
         db_table = 'Answers'
 
 
@@ -43,7 +41,6 @@ class Following(models.Model):
     uidfollowing = models.IntegerField(db_column='uIDFollowing')  # Field name made lowercase.
 
     class Meta:
-        managed = False
         db_table = 'Following'
         unique_together = (('uid', 'uidfollowing'),)
 
@@ -61,7 +58,6 @@ class Questions(models.Model):
     private = models.IntegerField()
 
     class Meta:
-        managed = False
         db_table = 'Questions'
 
 
@@ -70,7 +66,6 @@ class Tags(models.Model):
     tags = models.CharField(max_length=64)
 
     class Meta:
-        managed = False
         db_table = 'Tags'
         unique_together = (('tid', 'tags'),)
 
@@ -84,7 +79,6 @@ class Users(models.Model):
     lastlogin = models.DateTimeField(db_column='lastLogin')  # Field name made lowercase.
 
     class Meta:
-        managed = False
         db_table = 'Users'
 
 

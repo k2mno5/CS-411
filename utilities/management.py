@@ -6,12 +6,14 @@ import django.db.models
 from django.http import HttpResponse
 from django.http import *
 
+
 # datebase dependency
 from . import models as StackQuora
 from django.db.models import Max
 from random import randint
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
+ 
 
 # date processing dependency
 from django.core import serializers
@@ -231,6 +233,7 @@ def getCertainActivities(userID, postType, actionType, page):
 
     res["postDetail"] = getPosts(postIDs, postTypes)
     return res
+
 
 # updateVoteStatus
 # input: post ID, 
@@ -564,8 +567,8 @@ def updateFollowers(body):
         return HttpResponse("LOL, user cannot follow himself, loop is not allowed!")
 
     try:
-        StackQuora.Users.objects.get(uid = userID)
-        StackQuora.Users.objects.get(uid = targetID)        
+        user = StackQuora.Users.objects.get(uid = userID)
+        target = StackQuora.Users.objects.get(uid = targetID)        
     except ObjectDoesNotExist:
         return HttpResponseBadRequest("Either user or target user doesn't exist.")
 
@@ -580,11 +583,19 @@ def updateFollowers(body):
                     WHERE uID = %s and uIDFollowing = %s
                 '''
         cursor.execute(query,[userID, targetID])
+        user.following = user.following - 1
+        target.follower = target.follower - 1
+        user.save()
+        target.save()
         return HttpResponse("Successfully deleted pair!")
     else:
         try:
             res = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
         except ObjectDoesNotExist:
+            user.following = user.following+1
+            target.follower = target.follower+1
+            user.save()
+            target.save()
             new_pair = StackQuora.Following.objects.create(uid = userID, uidfollowing = targetID)
             return HttpResponse("Successfully add pair!")
     return HttpResponse("Pair already exists!")
