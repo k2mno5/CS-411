@@ -2,6 +2,12 @@
 from __future__ import unicode_literals
 from django.http import *
 from django.http import HttpResponse
+from django.http import JsonResponse
+
+# handle json
+import json
+from django.core import serializers
+
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from models import Questions
