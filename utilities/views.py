@@ -222,12 +222,46 @@ def updateFollowers(request):
 def updateUserInfo(request):
     return management.updateUserInfo(request.body)
 
-    qRes, aRes = management.getVoteStatus(uID, qIDs, aIDs)
-    res_dict = {}
-    res_dict['question_voted_status'] = []
-    res_dict['answer_voted_status'] = []
-    for status in qRes:
-        res_dict['question_voted_status'].append(status)
-    for status in aRes:
-        res_dict['answer_voted_status'].append(status)
-    return JsonResponse(res_dict)
+@csrf_exempt
+def signup(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody or 'userName' not in jsonBody:
+        return HttpResponseBadRequest('Missing field') 
+
+    res = management.signup(jsonBody['email'], jsonBody['password'], jsonBody['userName'])
+    if res is None:
+        return HttpResponseBadRequest('Email has been registered')
+    else:
+        return JsonResponse(res)
+
+@csrf_exempt
+def login(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody:
+        return HttpResponseBadRequest('Missing field')
+
+    res = management.login(jsonBody['email'], jsonBody['password'])
+    if res['userID'] == -1:
+        return HttpResponseBadRequest('User Not Found')
+    elif res['token'] == -1:
+        return HttpResponseBadRequest('Incorrect Password')
+    else:
+        return JsonResponse(res)
+
+@csrf_exempt
+def reset(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody:
+        return HttpResponseBadRequest('Missing field')
+
+    res = management.reset(jsonBody['email'], jsonBody['password'])
+    if res == 0:
+        return HttpResponse('Password Has Been Reset')
+    else:
+        return HttpResponseBadRequest('User Not Found')
