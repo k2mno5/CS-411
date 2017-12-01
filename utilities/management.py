@@ -6,6 +6,7 @@ import django.db.models
 from django.http import HttpResponse
 from django.http import *
 
+
 # datebase dependency
 from . import models as StackQuora
 from django.db.models import Max

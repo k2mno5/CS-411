@@ -56,7 +56,6 @@ def getUserUpdate_random(request):
 def displayQuestionAnswers(request, qaID, is_ques):
     return management.displayQuestionAnswers(int(qaID), int(is_ques))
 
-
 # post answer, add an answer to the question
 # input request containing the json file of hte answer
 # output ack
