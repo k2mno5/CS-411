@@ -223,3 +223,46 @@ def updateFollowers(request):
 def updateUserInfo(request):
     return management.updateUserInfo(request.body)
 
+@csrf_exempt
+def signup(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody or 'userName' not in jsonBody:
+        return HttpResponseBadRequest('Missing field') 
+
+    res = management.signup(jsonBody['email'], jsonBody['password'], jsonBody['userName'])
+    if res is None:
+        return HttpResponseBadRequest('Email has been registered')
+    else:
+        return JsonResponse(res)
+
+@csrf_exempt
+def login(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody:
+        return HttpResponseBadRequest('Missing field')
+
+    res = management.login(jsonBody['email'], jsonBody['password'])
+    if res['userID'] == -1:
+        return HttpResponseBadRequest('User Not Found')
+    elif res['token'] == -1:
+        return HttpResponseBadRequest('Incorrect Password')
+    else:
+        return JsonResponse(res)
+
+@csrf_exempt
+def reset(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody:
+        return HttpResponseBadRequest('Missing field')
+
+    res = management.reset(jsonBody['email'], jsonBody['password'])
+    if res == 0:
+        return HttpResponse('Password Has Been Reset')
+    else:
+        return HttpResponseBadRequest('User Not Found')

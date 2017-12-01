@@ -5,15 +5,38 @@ from django.test import TestCase
 import unittest
 
 import json
+import datetime
+from django.utils import timezone
 
 from . import models as StackQuora
 from . import management
 from . import views
 
+
+def initTestOnlyEntry():
+    now = timezone.now()
+    yesterday = timezone.now() - datetime.timedelta(days=7)
+    lastYear = timezone.now() - datetime.timedelta(days=365)
+
+    # wadu (expired)
+    StackQuora.Authorization.objects.create(email = "waduhack@gmail.com", password = "laotie666", token = 23456, uid = 5, lastactive = yesterday, datejoined = lastYear)
+
+    # somebody (valid)
+    StackQuora.Authorization.objects.create(email = "somebody@hotmail.com", password = "nobodyKnows", token = 12345, uid = 6, lastactive = now, datejoined = yesterday)
+
+
+def clearTestOnlyEntry():
+    # linked to existing entry, so related users shouldn't be deleted
+    StackQuora.Authorization.objects.all().delete()
+
 # Create your tests here.
 class ManagementTestCase(TestCase):
     def setUp(self):
+        initTestOnlyEntry()
         self.maxDiff = None
+
+    def tearDown(self):
+        clearTestOnlyEntry()
 
     # =================== getFollowingStatus Function ========================
     # a series of tests for getFollowingStatus
@@ -271,31 +294,34 @@ class ManagementTestCase(TestCase):
         self.assertEquals(res, ref)
 
     # ================= signUp Function =======================
-    @unittest.skip('Function Not Implemented')
     def testSignUp(self):
-        
-        # internal function to clear Authorization table
-        # and to create an user that has expired token and one that don't
-        management.clearAuthorization()
-        
         # register a user
         email = "cnmua@gmail.com"
         password = "laotie666"
+        userName = "Mr. Anderson"
 
-        res = management.signup(email, password)
-        self.assertEquals(res, 0)
+        sRes = management.signup(email, password, userName)
+        self.assertNotEqual(sRes, None)
+
+        # check if the object is indeed added
+        res = StackQuora.Authorization.objects.get(email = email)
+        self.assertEquals(res.email, "cnmua@gmail.com")
+        self.assertEquals(res.password, "laotie666")
+        self.assertEquals(res.token, sRes['token'])
+
+        getUser = StackQuora.Users.objects.get(uid = res.uid)
+        self.assertEquals(getUser.username, "Mr. Anderson")
+        self.assertEquals(getUser.uid, sRes['userID'])
 
         # register a registered email (only failure case here)
-        res = management.signup(email, password)
-        self.assertEquals(res, 1)
+        fRes = management.signup(email, password)
+        self.assertEquals(fRes, None)
+
+        getUser.delete()
+        res.delete()
 
     # ================ login Function ======================
-    @unittest.skip('Function Not Implemented')
     def testLogin(self):
-        # internal function to clear Authorization table
-        # and to create an user that has expired token and one that don't
-        management.clearAuthorization()
-
         # that user with expired token
         email = "waduhack@gmail.com"
         password = "laotie666"
@@ -303,9 +329,9 @@ class ManagementTestCase(TestCase):
         # on successful login
         res = management.login(email, password)
         # user not found
-        self.failIfEqual(res['userID'], -1)
+        self.assertNotEqual(res['userID'], -1)
         # wrong password
-        self.failIfEqual(res['token'], -1)
+        self.assertNotEqual(res['token'], -1)
 
         # simulate validation process during update activities
         # see test case for validation for return values and their meanings
@@ -316,7 +342,7 @@ class ManagementTestCase(TestCase):
         password = "laotie233"
 
         res = management.login(email, password)
-        self.failIfEqual(res['userID'], -1)
+        self.assertNotEqual(res['userID'], -1)
         self.assertEquals(res['token'], -1)
 
         email = "wth@gmail.com"
@@ -326,16 +352,13 @@ class ManagementTestCase(TestCase):
 
 
     # ===================== resetPassword Function ===============
-    @unittest.skip('Function Not Implemented')
     def testReset(self):
-        management.clearAuthorization()
-
         # wrong password
         email = "waduhack@gmail.com"
         password = "laotie233"
 
         res = management.login(email, password)
-        self.failIfEqual(res['userID'], -1)
+        self.assertNotEqual(res['userID'], -1)
         self.assertEquals(res['token'], -1)
 
         # reset
@@ -344,8 +367,8 @@ class ManagementTestCase(TestCase):
 
         # try login
         res = management.login(email, password)
-        self.failIfEqual(res['userID'], -1)
-        self.failIfEqual(res['token'], -1)
+        self.assertNotEqual(res['userID'], -1)
+        self.assertNotEqual(res['token'], -1)
 
         # reset false user
         email = "wth@gmail.com"
@@ -357,23 +380,26 @@ class ManagementTestCase(TestCase):
 
 
     # ================== validation Function ==================
-    @unittest.skip('Function Not Implemented')
     def testValidation(self):
-        management.clearAuthorization()
-
         # valid token
         self.assertEquals(management.validation(6, 12345), 0)
+
         # expired token
         self.assertEquals(management.validation(5, 23456), 1)
+
+        # wrong token
+        self.assertEquals(management.validation(6, 12355), 1)
+
+        # wrong user
+        self.assertEquals(management.validation(7, 12355), 2)
 
 
     # ================ extendToken Function =================
     # internal function that will be called in login function or update activities when passing validation
-    @unittest.skip('Function Not Implemented')
     def testExtendToken(self):
-        management.clearAuthorization()
-        userID = 5
-        management.extendToken(userID)
+        email = "waduhack@gmail.com"
+        user = StackQuora.Authorization.objects.get(email = email)
+        management.extendToken(user)
         self.assertEquals(management.validation(5, 23456), 0)
 
 
@@ -381,6 +407,88 @@ class ViewTestCase(TestCase):
     def setUp(self):
         self.maxDiff = None
         self.request = lambda: None
+        initTestOnlyEntry()
+
+    def tearDown(self):
+        clearTestOnlyEntry()
+
+    # TODO: tests for signup, login, reset is not well-covered
+    # ====================== signup API ====================
+    def testSignup(self):
+        # missing field
+        self.request.body = json.dumps({'email':"abc", 'password': 'bcd'})
+        response = views.signup(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content,'Missing field')
+
+        # register twice
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
+        response = views.signup(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, 'Email has been registered')
+
+        # success
+        self.request.body = json.dumps({'email':"123@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
+        response = views.signup(self.request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)['userID'] > 6, True)
+
+    # ================== login API ======================
+    def testLogin(self):
+        # missing field
+        self.request.body = json.dumps({'email':"abc"})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, 'Missing field')
+   
+        # wrong password
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie6666'})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, 'Incorrect Password')
+ 
+        # wrong user
+        self.request.body = json.dumps({'email':"1234@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
+        response = views.login(self.request)
+        self.assertEqual(response.content, 'User Not Found')
+
+        # success
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie666'})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual('token' in json.loads(response.content), True)
+        self.assertEqual(json.loads(response.content)['userID'], 5)
+
+    # ============= reset API ===============
+    def testReset(self):
+        # missing field
+        self.request.body = json.dumps({'email':"abc"})
+        response = views.reset(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content,'Missing field')
+
+        # register twice
+        self.request.body = json.dumps({'email':"1234@gmail.com", 'password': 'bcd'})
+        response = views.reset(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, 'User Not Found')
+
+        # success
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'bcd'})
+        response = views.reset(self.request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'Password Has Been Reset')
+
+        # test if reset
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie666'})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, 'Incorrect Password')
+
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'bcd'})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)['userID'], 5)
 
 
     # ======================= getFollowingStatus API =======================

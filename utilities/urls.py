@@ -18,4 +18,7 @@ urlpatterns = [
     url(r'^user/filteredTimeline/(?P<userID>[0-9]+)/(?P<postType>[0-2]{1})/(?P<actionType>[0-3]{1})/(?P<page>[0-9]+)', views.getCertainActivities),
     url(r'^user/updateFollowers/$', views.updateFollowers),
     url(r'^user/updateUserInfo/$', views.updateUserInfo),
+    url(r'^user/signUp', views.signup),
+    url(r'^user/login', views.login),
+    url(r'^user/forgetPassword', views.reset),
 ]
