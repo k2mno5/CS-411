@@ -17,6 +17,7 @@ class Activityhistory(models.Model):
     time = models.DateTimeField()
 
     class Meta:
+        managed = False
         db_table = 'ActivityHistory'
         unique_together = (('uid', 'actionid', 'actiontype'),)
 
@@ -33,7 +34,21 @@ class Answers(models.Model):
     private = models.IntegerField()
 
     class Meta:
+        managed = False
         db_table = 'Answers'
+
+
+class Authorization(models.Model):
+    email = models.CharField(primary_key=True, max_length=254)
+    password = models.CharField(max_length=128)
+    token = models.IntegerField(blank=True, null=True)
+    uid = models.IntegerField(db_column='uID')  # Field name made lowercase.
+    lastactive = models.DateTimeField(db_column='lastActive', blank=True, null=True)  # Field name made lowercase.
+    datejoined = models.DateTimeField(db_column='dateJoined', blank=True, null=True)  # Field name made lowercase.
+
+    class Meta:
+        managed = False
+        db_table = 'Authorization'
 
 
 class Following(models.Model):
@@ -41,6 +56,7 @@ class Following(models.Model):
     uidfollowing = models.IntegerField(db_column='uIDFollowing')  # Field name made lowercase.
 
     class Meta:
+        managed = False
         db_table = 'Following'
         unique_together = (('uid', 'uidfollowing'),)
 
@@ -58,6 +74,7 @@ class Questions(models.Model):
     private = models.IntegerField()
 
     class Meta:
+        managed = False
         db_table = 'Questions'
 
 
@@ -66,6 +83,7 @@ class Tags(models.Model):
     tags = models.CharField(max_length=64)
 
     class Meta:
+        managed = False
         db_table = 'Tags'
         unique_together = (('tid', 'tags'),)
 
@@ -79,6 +97,7 @@ class Users(models.Model):
     lastlogin = models.DateTimeField(db_column='lastLogin')  # Field name made lowercase.
 
     class Meta:
+        managed = False
         db_table = 'Users'
 
 
