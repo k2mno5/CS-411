@@ -82,6 +82,33 @@ INSERT INTO `Answers` VALUES (1,2,'2017-11-11 21:30:07',2,0,'Answer one to the s
 UNLOCK TABLES;
 
 --
+-- Table structure for table `Authorization`
+--
+
+DROP TABLE IF EXISTS `Authorization`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Authorization` (
+  `email` varchar(254) NOT NULL,
+  `password` varchar(128) NOT NULL,
+  `token` int(11) DEFAULT NULL,
+  `uID` int(11) NOT NULL,
+  `lastActive` datetime DEFAULT NULL,
+  `dateJoined` datetime DEFAULT NULL,
+  PRIMARY KEY (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Authorization`
+--
+
+LOCK TABLES `Authorization` WRITE;
+/*!40000 ALTER TABLE `Authorization` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Authorization` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `Following`
 --
 
@@ -498,4 +525,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-11-12 13:18:43
+-- Dump completed on 2017-11-29  9:26:45
