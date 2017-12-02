@@ -350,6 +350,35 @@ class ManagementTestCase(TestCase):
         res = management.login(email, password)
         self.assertEquals(res, {'userID': -1, 'token': -1})
 
+    # ================ logout Function ======================
+    def testLogout(self):
+        # user is not login (expired token)
+        email = "waduhack@gmail.com"
+        password = "laotie666"
+
+        # failure: logout on inactive user (who has to login first anyway)
+        self.assertEquals(management.logout(5, 23456), 1)
+
+        # success: logout on active user
+        res = management.login(email, password)
+        self.assertEquals(management.logout(res['userID'], res['token']), 0)
+        self.assertEquals(management.validation(res['userID'], res['token']), 1)
+
+        # check if set as inactive
+        user = StackQuora.Authorization.objects.get(email = email)
+        self.assertEquals(user.lastactive, None)
+
+        # should fail validation
+        self.assertEquals(management.validation(res['userID'], res['token']), 1)
+
+        # try login again
+        res = management.login(email, password)
+        self.assertEquals(management.validation(res['userID'], res['token']), 0)
+
+        # failure: logout fake user
+        self.assertEquals(management.logout(8, 23456), 2)
+        
+
 
     # ===================== resetPassword Function ===============
     def testReset(self):
@@ -445,12 +474,39 @@ class ViewTestCase(TestCase):
         self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie6666'})
         response = views.login(self.request)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content, 'Incorrect Password')
+        self.assertEqual(response.content, 'Incorrect password')
  
         # wrong user
         self.request.body = json.dumps({'email':"1234@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
         response = views.login(self.request)
-        self.assertEqual(response.content, 'User Not Found')
+        self.assertEqual(response.content, 'User not found')
+
+        # success
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie666'})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual('token' in json.loads(response.content), True)
+        self.assertEqual(json.loads(response.content)['userID'], 5)
+
+
+    # ============= logout API ==============
+    def testLogout(self):
+        # missing field
+        self.request.body = json.dumps({'userID':"abc"})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, 'Missing field')
+  
+        # wrong password
+        self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie6666'})
+        response = views.login(self.request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, 'Incorrect password')
+
+        # wrong user
+        self.request.body = json.dumps({'email':"1234@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
+        response = views.login(self.request)
+        self.assertEqual(response.content, 'User not found')
 
         # success
         self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie666'})
@@ -471,19 +527,19 @@ class ViewTestCase(TestCase):
         self.request.body = json.dumps({'email':"1234@gmail.com", 'password': 'bcd'})
         response = views.reset(self.request)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content, 'User Not Found')
+        self.assertEqual(response.content, 'User not found')
 
         # success
         self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'bcd'})
         response = views.reset(self.request)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'Password Has Been Reset')
+        self.assertEqual(response.content, 'Password has been reset')
 
         # test if reset
         self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'laotie666'})
         response = views.login(self.request)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.content, 'Incorrect Password')
+        self.assertEqual(response.content, 'Incorrect password')
 
         self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'bcd'})
         response = views.login(self.request)
@@ -558,7 +614,7 @@ class ViewTestCase(TestCase):
         userID = "7"
         showActivities = "1"
         res = views.getUserStatus(self.request, userID, showActivities)
-        self.assertEqual(res.content, 'Invalid User ID')
+        self.assertEqual(res.content, 'Invalid user ID')
         self.assertEqual(res.status_code, 400)
 
         # unmatched type
@@ -586,7 +642,7 @@ class ViewTestCase(TestCase):
         userID = "7"
         page = "0"
         res = views.getFollowingActivities(self.request, userID, page)
-        self.assertEqual(res.content, 'Invalid User ID')
+        self.assertEqual(res.content, 'Invalid user ID')
         self.assertEqual(res.status_code, 400)
 
         # invalid page
