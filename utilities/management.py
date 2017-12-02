@@ -684,7 +684,7 @@ def updateFollowers(body):
     # find if the user is following the target
     if typ == 1:
         try:
-            res = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+            user = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
         except ObjectDoesNotExist:
             return HttpResponseBadRequest("User-target pair does not exists!")
         cursor = connection.cursor()
@@ -699,7 +699,7 @@ def updateFollowers(body):
         return HttpResponse("Successfully deleted pair!")
     else:
         try:
-            res = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+            user = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
         except ObjectDoesNotExist:
             user.following = user.following+1
             target.follower = target.follower+1
@@ -723,6 +723,11 @@ def updateUserInfo(body):
     elif validation(userID, token) == 2:
         return HttpResponseBadRequest("User is not registered!")
     
+    try:
+        res = StackQuora.Users.objects.get(uid = userID)
+    except ObjectDoesNotExist:
+        return HttpResponseBadRequest("User doesn't exist.")
+	
     res.username = userName
     res.save()
     return HttpResponse("Successfully update the name!")
