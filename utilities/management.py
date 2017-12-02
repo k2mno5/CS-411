@@ -677,6 +677,7 @@ def updateFollowers(body):
         return HttpResponse("LOL, user cannot follow himself, loop is not allowed!")
 
     try:
+        user = StackQuora.Users.objects.get(uid = userID)
         target = StackQuora.Users.objects.get(uid = targetID)        
     except ObjectDoesNotExist:
         return HttpResponseBadRequest("Either user or target user doesn't exist.")
@@ -684,7 +685,7 @@ def updateFollowers(body):
     # find if the user is following the target
     if typ == 1:
         try:
-            user = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+            StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
         except ObjectDoesNotExist:
             return HttpResponseBadRequest("User-target pair does not exists!")
         cursor = connection.cursor()
@@ -699,7 +700,7 @@ def updateFollowers(body):
         return HttpResponse("Successfully deleted pair!")
     else:
         try:
-            user = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+            StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
         except ObjectDoesNotExist:
             user.following = user.following+1
             target.follower = target.follower+1
