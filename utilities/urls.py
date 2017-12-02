@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'^user/updateUserInfo/$', views.updateUserInfo),
     url(r'^user/signUp', views.signup),
     url(r'^user/login', views.login),
+    url(r'^user/logout', views.logout),
     url(r'^user/forgetPassword', views.reset),
     url(r'^getqIDfromaID/(?P<aID>[0-9]+)/$',views.getqIDfromaID),
 ]
