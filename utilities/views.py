@@ -34,12 +34,13 @@ def index(request):
 # updateVoteStatus wrapper
 # input: Http get_request
 # output: empty http response
-def updateVoteStatus(request, postID, postType, userID, voteStatus):
+def updateVoteStatus(request, postID, postType, userID, voteStatus, token):
     postID = int(postID)
     postType = int(postType)
     userID = int(userID)
     voteStatus = int(voteStatus)
-    return management.updateVoteStatus(postID, postType, userID, voteStatus)
+    token = int(token)
+    return management.updateVoteStatus(postID, postType, userID, voteStatus, token)
 
 # getUserUpdate wrapper
 # input uID, Http_get_request
@@ -55,8 +56,8 @@ def getUserUpdate_random(request):
 # input ID, possibly UID or AID, 
 #       ques, specify whether a question an all of its answers will return
 # output json file specified online
-def displayQuestionAnswers(request, qaID, is_ques):
-    return management.displayQuestionAnswers(int(qaID), int(is_ques))
+def displayQuestionAnswers(request, qaID, is_answ):
+    return management.displayQuestionAnswers(int(qaID), int(is_answ))
 
 
 # post answer, add an answer to the question
@@ -72,8 +73,8 @@ def postQuestion(request):
     return management.postQuestion(request.body)
 
 # delete a post, could be a question or an answer
-def deletePost(request, ID, is_ques):
-    return management.deletePost(int(ID), int(is_ques))
+def deletePost(request, ID, is_answ, userID ,token):
+    return management.deletePost(int(ID), int(is_answ), int(userID), int(token))
 
 
 # get following status by Luo
@@ -229,3 +230,47 @@ def updateUserInfo(request):
 # helper function to lookup qid from aid
 def getqIDfromaID(request,aID):
     return management.getqIDfromaID(int(aID))
+
+@csrf_exempt
+def signup(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody or 'userName' not in jsonBody:
+        return HttpResponseBadRequest('Missing field') 
+
+    res = management.signup(jsonBody['email'], jsonBody['password'], jsonBody['userName'])
+    if res is None:
+        return HttpResponseBadRequest('Email has been registered')
+    else:
+        return JsonResponse(res)
+
+@csrf_exempt
+def login(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody:
+        return HttpResponseBadRequest('Missing field')
+
+    res = management.login(jsonBody['email'], jsonBody['password'])
+    if res['userID'] == -1:
+        return HttpResponseBadRequest('User Not Found')
+    elif res['token'] == -1:
+        return HttpResponseBadRequest('Incorrect Password')
+    else:
+        return JsonResponse(res)
+
+@csrf_exempt
+def reset(request):
+    jsonBody = json.loads(request.body)
+
+    # check if missing fields
+    if 'email' not in jsonBody or 'password' not in jsonBody:
+        return HttpResponseBadRequest('Missing field')
+
+    res = management.reset(jsonBody['email'], jsonBody['password'])
+    if res == 0:
+        return HttpResponse('Password Has Been Reset')
+    else:
+        return HttpResponseBadRequest('User Not Found')
