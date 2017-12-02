@@ -697,6 +697,12 @@ def login(userEmail, userPassword):
     except ObjectDoesNotExist:
         return {'userID': -1, 'token': -1}
 
+def logout(uID, token):
+    res = validation(uID, token)
+    if res == 0:
+        StackQuora.Authorization.objects.filter(uid = uID).update(lastactive = None)
+    return res
+
 # validation
 # params: uID, userID to be validated
 #         token, token linked to the userID
@@ -704,7 +710,7 @@ def login(userEmail, userPassword):
 def validation(uID, token):
     try:
         validUser = StackQuora.Authorization.objects.get(uid = uID)
-        if validUser.token == token and validUser.lastactive > (timezone.now() - datetime.timedelta(days = MAX_INACTIVE_DAYS)):
+        if validUser.lastactive is not None and validUser.token == token and validUser.lastactive > (timezone.now() - datetime.timedelta(days = MAX_INACTIVE_DAYS)):
             extendToken(validUser)
             return 0
         else:

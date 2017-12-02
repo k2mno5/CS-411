@@ -76,7 +76,10 @@ def deletePost(request, ID, is_ques):
 # get following status by Luo
 @csrf_exempt
 def getFollowingStatus(request):
-    jsonBody = json.loads(request.body)
+    try:
+        jsonBody = json.loads(request.body)
+    except Exception as e:
+        return HttpResponseBadRequest('Fail parsing JSON: {}'.format(e))
 
     # check if missing fields
     if 'content' not in jsonBody or 'userID' not in jsonBody['content'] or 'target' not in jsonBody['content']:
@@ -86,103 +89,105 @@ def getFollowingStatus(request):
     uID = -1
     try:
         uID = int(jsonBody['content']['userID'])
-    except:
-        return HttpResponseBadRequest('Field type does not match')
 
-    targets = []
-    for target in jsonBody['content']['target']:
-        try:
+        targets = []
+        for target in jsonBody['content']['target']:
             targets.append(int(target))
-        except:
-            return HttpResponseBadRequest('Field type does not match')
 
-    res = management.getFollowingStatus(uID, targets)
-    res_dict = {}
-    res_dict['following_results'] = []
-    for status in res:
-        if status == 0:
-            res_dict['following_results'].append("n")
-        else:
-            res_dict['following_results'].append("y")
-    return JsonResponse(res_dict)
+        try:
+            res = management.getFollowingStatus(uID, targets)
+            res_dict = {}
+            res_dict['following_results'] = []
+            for status in res:
+                if status == 0:
+                    res_dict['following_results'].append("n")
+                else:
+                    res_dict['following_results'].append("y")
+            return JsonResponse(res_dict)
+        except:
+            HttpResponseServerError('Internal server error, please report')
+    except ValueError:
+        return HttpResponseBadRequest('Field type does not match')
 
 # get vote status by luo
 @csrf_exempt
 def getVoteStatus(request):
-    jsonBody = json.loads(request.body)
+    try:
+        jsonBody = json.loads(request.body)
+    except Exception as e:
+        return HttpResponseBadRequest('Fail parsing JSON: {}'.format(e))
 
     # check if missing fields
     if 'content' not in jsonBody or 'userID' not in jsonBody['content'] or 'qIDs' not in jsonBody['content'] or 'aIDs' not in jsonBody['content']:
         return HttpResponseBadRequest('Missing field')
 
     # check if field type match
-    uID = -1
     try:
         uID = int(jsonBody['content']['userID'])
-    except:
+
+        qIDs = []
+        aIDs = []
+        for target in jsonBody['content']['qIDs']:
+            qIDs.append(int(target))
+
+        for target in jsonBody['content']['aIDs']:
+            aIDs.append(int(target))
+
+        try:
+            qRes, aRes = management.getVoteStatus(uID, qIDs, aIDs)
+            res_dict = {}
+            res_dict['question_voted_status'] = []
+            res_dict['answer_voted_status'] = []
+            for status in qRes:
+                res_dict['question_voted_status'].append(status)
+            for status in aRes:
+                res_dict['answer_voted_status'].append(status)
+            return JsonResponse(res_dict)
+        except:
+            return HttpResponseServerError('Internal server error, please report')
+    except ValueError:
         return HttpResponseBadRequest('Field type does not match')
 
-    qIDs = []
-    aIDs = []
-    for target in jsonBody['content']['qIDs']:
-        try:
-            qIDs.append(int(target))
-        except:
-            return HttpResponseBadRequest('Field type does not match')
-
-    for target in jsonBody['content']['aIDs']:
-        try:
-            aIDs.append(int(target))
-        except:
-            return HttpResponseBadRequest('Field type does not match')
-
-
-    qRes, aRes = management.getVoteStatus(uID, qIDs, aIDs)
-    res_dict = {}
-    res_dict['question_voted_status'] = []
-    res_dict['answer_voted_status'] = []
-    for status in qRes:
-        res_dict['question_voted_status'].append(status)
-    for status in aRes:
-        res_dict['answer_voted_status'].append(status)
-    return JsonResponse(res_dict)
-
 def getFollowingActivities(request, userID, page):
-    uID = -1
-    pageOffset = -1
     try:
         uID = int(userID)
         pageOffset = int(page)
-    except:
+        if pageOffset < 0:
+            return HttpResponseBadRequest('Invalid page offset')
+
+        try:
+            res = management.getFollowingActivities(uID, pageOffset)
+
+            if res is None:
+                return HttpResponseBadRequest('Invalid user ID')
+            else:
+                res['page'] = pageOffset
+                return JsonResponse(res)
+        except:
+            return HttpResponseServerError('Internal server error, please report')
+
+    except ValueError:
         return HttpResponseBadRequest('Field type does not match')
 
-    if pageOffset < 0:
-        return HttpResponseBadRequest('Invalid page offset')
-
-    res = management.getFollowingActivities(uID, pageOffset)
-
-    if res is None:
-        return HttpResponseBadRequest('Invalid User ID')
-    else:
-        res['page'] = pageOffset
-        return JsonResponse(res)
-
 def getUserStatus(request, userID, showActivities):
-    uID = -1
-    showAct = True
     try:
+        showAct = True
         uID = int(userID)
         if int(showActivities) == 0:
             showAct = False
-    except:
+
+        try:
+            res = management.getUserStatus(uID, showAct)
+
+            if res is None:
+                return HttpResponseBadRequest('Invalid user ID')
+            else:
+                return JsonResponse(res)
+        except:
+            return HttpResponseServerError('Internal server error, please report')
+
+    except ValueError:
         return HttpResponseBadRequest('Field type does not match')
-
-    res = management.getUserStatus(userID, showAct)
-
-    if res is None:
-        return HttpResponseBadRequest('Invalid User ID')
-    else:
-        return JsonResponse(res)
 
 def getFollows(request, requestType, userID, page, showDetail):
     try:
@@ -192,13 +197,16 @@ def getFollows(request, requestType, userID, page, showDetail):
         if showDetail == "0":
             returnDetail = False
 
-        res = management.getFollows(uID, pageOffset, (requestType == "followings"), returnDetail)
-        res['page'] = pageOffset
-        return JsonResponse(res)
-    except:
+        try:
+            res = management.getFollows(uID, pageOffset, (requestType == "followings"), returnDetail)
+            res['page'] = pageOffset
+            return JsonResponse(res)
+        except:
+            return HttpResponseServerError('Internal server error, please report')
+
+    except ValueError:
         # this should never happend since regex makes sure that parameters can be parsed to corresponding type
         return HttpResponseBadRequest('Field type does not match')
-
 
 def getCertainActivities(request, userID, postType, actionType, page):
     try:
@@ -206,12 +214,17 @@ def getCertainActivities(request, userID, postType, actionType, page):
         post = int(postType)
         action = int(actionType)
         pageOffset = int(page)
-        res = management.getCertainActivities(uID, post, action, pageOffset)
-        res['page'] = pageOffset
-        return JsonResponse(res)
 
-    except:
+        try:
+            res = management.getCertainActivities(uID, post, action, pageOffset)
+            res['page'] = pageOffset
+            return JsonResponse(res)
+        except:
+            return HttpResponseServerError('Internal server error, please report')
+
+    except ValueError:
         return HttpResponseBadRequest('Field type does not match')
+
 
 # update followers function, expecting a JSON input
 @csrf_exempt
@@ -224,44 +237,92 @@ def updateUserInfo(request):
 
 @csrf_exempt
 def signup(request):
-    jsonBody = json.loads(request.body)
+    try:
+        jsonBody = json.loads(request.body)
+    except Exception as e:
+        return HttpResponseBadRequest('Fail parsing JSON: {}'.format(e))
 
     # check if missing fields
     if 'email' not in jsonBody or 'password' not in jsonBody or 'userName' not in jsonBody:
         return HttpResponseBadRequest('Missing field') 
 
-    res = management.signup(jsonBody['email'], jsonBody['password'], jsonBody['userName'])
-    if res is None:
-        return HttpResponseBadRequest('Email has been registered')
-    else:
-        return JsonResponse(res)
+    try:
+        res = management.signup(jsonBody['email'], jsonBody['password'], jsonBody['userName'])
+        if res is None:
+            return HttpResponseBadRequest('Email has been registered')
+        else:
+            return JsonResponse(res)
+    except:
+        return HttpResponseServerError('Internal server error, please report')
+
 
 @csrf_exempt
 def login(request):
-    jsonBody = json.loads(request.body)
+    try:
+        jsonBody = json.loads(request.body)
+    except Exception as e:
+        return HttpResponseBadRequest('Fail parsing JSON: {}'.format(e))
 
     # check if missing fields
     if 'email' not in jsonBody or 'password' not in jsonBody:
         return HttpResponseBadRequest('Missing field')
 
-    res = management.login(jsonBody['email'], jsonBody['password'])
-    if res['userID'] == -1:
-        return HttpResponseBadRequest('User Not Found')
-    elif res['token'] == -1:
-        return HttpResponseBadRequest('Incorrect Password')
-    else:
-        return JsonResponse(res)
+    try:
+        res = management.login(jsonBody['email'], jsonBody['password'])
+        if res['userID'] == -1:
+            return HttpResponseBadRequest('User not found')
+        elif res['token'] == -1:
+            return HttpResponseBadRequest('Incorrect password')
+        else:
+            return JsonResponse(res)
+    except:
+        return HttpResponseServerError('Internal server error, please report')
+    
+
+@csrf_exempt
+def logout(request):
+    try:
+        jsonBody = json.loads(request.body)
+    except Exception as e:
+        return HttpResponseBadRequest('Fail parsing JSON: {}'.format(e))
+
+    # check if missing fields
+    if 'userID' not in jsonBody or 'token' not in jsonBody:
+        return HttpResponseBadRequest('Missing field')
+    try:
+        uID = int(jsonBody['userID'])
+        token = int(jsonBody['token'])
+
+        try:
+            res = management.logout(uID, token)
+            if res == 0:
+                return HttpResponse('Logged out')
+            elif res == 1:
+                return HttpResponseBadRequest('User has logged out')
+            else:
+                return HttpResponseBadRequest('User not found')
+        except:
+            return HttpResponseServerError('Internal server error, please report')
+
+    except ValueError:
+        return HttpResponseBadRequest('Field type does not match')
 
 @csrf_exempt
 def reset(request):
-    jsonBody = json.loads(request.body)
+    try:
+        jsonBody = json.loads(request.body)
+    except Exception as e:
+        return HttpResponseBadRequest('Fail parsing JSON: {}'.format(e))
 
     # check if missing fields
     if 'email' not in jsonBody or 'password' not in jsonBody:
         return HttpResponseBadRequest('Missing field')
 
-    res = management.reset(jsonBody['email'], jsonBody['password'])
-    if res == 0:
-        return HttpResponse('Password Has Been Reset')
-    else:
-        return HttpResponseBadRequest('User Not Found')
+    try:
+        res = management.reset(jsonBody['email'], jsonBody['password'])
+        if res == 0:
+            return HttpResponse('Password has been reset')
+        else:
+            return HttpResponseBadRequest('User not found')
+    except:
+        return HttpResponseServerError('Internal server error, please report')
