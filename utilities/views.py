@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from models import Questions
 from . import management
+from . import search_engine
 import time
 import logging
 from django.http import JsonResponse
@@ -336,3 +337,10 @@ def reset(request):
             return HttpResponseBadRequest('User not found')
     except:
         return HttpResponseServerError('Internal server error, please report')
+
+
+# ======================= Advance Function, Search and Ranking engine ===================
+@csrf_exempt
+def search_driver(request):
+    return JsonResponse(search_engine.search_driver(request.body))
+    

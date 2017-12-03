@@ -24,4 +24,5 @@ urlpatterns = [
     url(r'^user/logout', views.logout),
     url(r'^user/forgetPassword', views.reset),
     url(r'^getqIDfromaID/(?P<aID>[0-9]+)/$',views.getqIDfromaID),
+    url(r'^search/search_questions/$', views.search_driver),
 ]
