@@ -419,6 +419,15 @@ def getUserUpdate_random():
     # formatting json object    
     data_json = serializers.serialize('json', random_data)
     data_json = json_parser.json_getUserUpdate(data_json, tag_array, len(tag_array))
+
+    # add user Name, pretty sure it is all Joe
+    data_json_temp_list = data_json['contents']
+    
+    for i in range(len(data_json_temp_list)):
+        userID = data_json_temp_list[i]['owneruserid']
+        data_json_temp_list[i]['ownerusername'] = StackQuora.Users.objects.get(uid = userID).username
+    data_json['contents'] = data_json_temp_list
+
     return JsonResponse(data_json)
 
 
