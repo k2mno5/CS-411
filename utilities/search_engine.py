@@ -145,12 +145,22 @@ def search_json_parser(precise_list, fuzzy_list):
         ele_dict = {}
         ele_dict['qID'] = ele[0]
         ele_dict['title'] =  ele[1]
+        ques = StackQuora.Questions.objects.get(qid = int(ele[0]))
+        ele_dict['body'] = ques.body
+        ele_dict['upvote'] = ques.upvote
+        ele_dict['downvote'] = ques.downvote
+        ele_dict['owneruserid'] = ques.owneruserid
         JSONOutDict['relevant questions'].append(ele_dict)
 
     for ele in fuzzy_list:
         ele_dict = {}
         ele_dict['qID'] = ele[0]
         ele_dict['title'] =  ele[1]
+        ques = StackQuora.Questions.objects.get(qid = int(ele[0]))
+        ele_dict['body'] = ques.body
+        ele_dict['upvote'] = ques.upvote
+        ele_dict['downvote'] = ques.downvote
+        ele_dict['owneruserid'] = ques.owneruserid
         JSONOutDict['recommended questions'].append(ele_dict)
     return JSONOutDict
 
