@@ -139,8 +139,8 @@ def search_questions_fuzzy(query, precise_output):
 
 def search_json_parser(precise_list, fuzzy_list):
     JSONOutDict = {}
-    JSONOutDict['relevant questions'] = []
-    JSONOutDict['recommended questions'] = []
+    JSONOutDict['relevant_questions'] = []
+    JSONOutDict['recommended_questions'] = []
     for ele in precise_list:
         ele_dict = {}
         ele_dict['qID'] = ele[0]
@@ -150,7 +150,7 @@ def search_json_parser(precise_list, fuzzy_list):
         ele_dict['upvote'] = ques.upvote
         ele_dict['downvote'] = ques.downvote
         ele_dict['owneruserid'] = ques.owneruserid
-        JSONOutDict['relevant questions'].append(ele_dict)
+        JSONOutDict['relevant_questions'].append(ele_dict)
 
     for ele in fuzzy_list:
         ele_dict = {}
@@ -161,7 +161,7 @@ def search_json_parser(precise_list, fuzzy_list):
         ele_dict['upvote'] = ques.upvote
         ele_dict['downvote'] = ques.downvote
         ele_dict['owneruserid'] = ques.owneruserid
-        JSONOutDict['recommended questions'].append(ele_dict)
+        JSONOutDict['recommended_questions'].append(ele_dict)
     return JSONOutDict
 
 
