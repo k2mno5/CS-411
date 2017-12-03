@@ -134,7 +134,7 @@ def search_questions_fuzzy(query, precise_output):
 
     # sort it 
     sorted_list = sorted(processed_list,key = lambda x: x[2], reverse = True)
-    return sorted_list[0:(10-len(processed_list))]
+    return sorted_list[0:(10-len(precise_output))]
 
 
 def search_json_parser(precise_list, fuzzy_list):
