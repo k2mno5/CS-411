@@ -23,4 +23,5 @@ urlpatterns = [
     url(r'^user/login', views.login),
     url(r'^user/logout', views.logout),
     url(r'^user/forgetPassword', views.reset),
+    url(r'emailService/confirm/(?P<userID>[0-9]+)/(?P<encodedValue>)', views.receiveVerificationResponse),
 ]
