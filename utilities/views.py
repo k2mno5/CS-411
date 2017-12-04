@@ -14,6 +14,7 @@ from django.shortcuts import render
 
 from models import Questions
 from . import management
+from . import emailService
 
 import time
 import logging
@@ -324,5 +325,22 @@ def reset(request):
             return HttpResponse('Password has been reset')
         else:
             return HttpResponseBadRequest('User not found')
+    except:
+        return HttpResponseServerError('Internal server error, please report')
+
+def receiveVerificationResponse(request, userID, encodedValue):
+    try:
+        uid = int(userID)
+        res = emailService.receiveVerificationResponse(uid, encodedValue)
+        if res['status'] == 0:
+            return HttpResponse('Process completed')
+        elif res['status'] == 1:
+            return HttpResponseBadRequest('Invalid parameters')
+        elif res['status'] == 2:
+            return HttpResponseBadRequest('User Not Found')
+        else:
+            return HttpResponseServerError('Internal server error, please report')
+    except ValueError:
+        return HttpResponseBadRequest('Field type does not match')
     except:
         return HttpResponseServerError('Internal server error, please report')

@@ -45,6 +45,7 @@ class Authorization(models.Model):
     uid = models.IntegerField(db_column='uID')  # Field name made lowercase.
     lastactive = models.DateTimeField(db_column='lastActive', blank=True, null=True)  # Field name made lowercase.
     datejoined = models.DateTimeField(db_column='dateJoined', blank=True, null=True)  # Field name made lowercase.
+    pendingpassword = models.CharField(db_column='pendingPassword', max_length=128, blank=True, null=True)  # Field name made lowercase.
 
     class Meta:
         managed = False
