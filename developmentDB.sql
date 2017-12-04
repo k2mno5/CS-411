@@ -95,6 +95,7 @@ CREATE TABLE `Authorization` (
   `uID` int(11) NOT NULL,
   `lastActive` datetime DEFAULT NULL,
   `dateJoined` datetime DEFAULT NULL,
+  `pendingPassword` varchar(128) DEFAULT NULL,
   PRIMARY KEY (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;

@@ -24,6 +24,8 @@ import time
 import datetime
 import json
 
+import emailService
+
 # logger for management module
 stdlogger = logging.getLogger(__name__)
 
@@ -767,7 +769,12 @@ def signup(newEmail, newPassword, newUserName = "Agent Smith"):
     except ObjectDoesNotExist:
         now = timezone.now()
         newUser = StackQuora.Users.objects.create(username = newUserName, following = 0, follower = 0, reputation = 0, lastlogin = now)
-        newRecord = StackQuora.Authorization.objects.create(email = newEmail, password = newPassword, uid = newUser.uid, datejoined = now, token = createToken(newUser.uid))
+        newRecord = StackQuora.Authorization.objects.create(email = newEmail, password = hex(hash(newPassword))[2:], pendingpassword = newPassword, uid = newUser.uid, datejoined = now, token = createToken(newUser.uid))
+        res = emailService.sendVerificationEmail(newRecord.email, newRecord.uid, newUser.username, newRecord.pendingpassword)
+        # When something is wrong in email, just ignore it and assume validated
+        if(res['status'] == 1):
+            newRecord.password = newRecord.pendingpassword
+            newRecord.save()
         return {'userID': newRecord.uid, 'token': newRecord.token}
 
 def login(userEmail, userPassword):
@@ -812,7 +819,13 @@ def validation(uID, token):
 def reset(userEmail, userPassword):
     try:
         validUser = StackQuora.Authorization.objects.get(email = userEmail)
-        validUser.password = userPassword
+        validUser.pendingpassword = userPassword
+
+        user = StackQuora.Users.objects.get(uid = validUser.uid)
+        res = emailService.sendVerificationEmail(validUser.email, validUser.uid, user.username, validUser.pendingpassword)
+        # When something is wrong in email, just ignore it and assume validated
+        if(res['status'] == 1):
+            validUser.password = validUser.pendingpassword
         validUser.save()
         return 0
     except ObjectDoesNotExist:

@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from . import models as StackQuora
 from . import management
+from . import emailService
 from . import views
 
 
@@ -306,8 +307,14 @@ class ManagementTestCase(TestCase):
         # check if the object is indeed added
         res = StackQuora.Authorization.objects.get(email = email)
         self.assertEquals(res.email, "cnmua@gmail.com")
-        self.assertEquals(res.password, "laotie666")
+        self.assertEquals(res.pendingpassword, "laotie666")
         self.assertEquals(res.token, sRes['token'])
+
+        # validate from email
+        status = emailService.receiveVerificationResponse(res.uid, hex(abs(hash(res.pendingpassword)^hash("Mr. Anderson")))[2:])
+        self.assertEquals(status['status'], 0)
+        res = StackQuora.Authorization.objects.get(email = email)
+        self.assertEquals(res.password, "laotie666")
 
         getUser = StackQuora.Users.objects.get(uid = res.uid)
         self.assertEquals(getUser.username, "Mr. Anderson")
@@ -395,6 +402,14 @@ class ManagementTestCase(TestCase):
         self.assertEquals(res, 0)
 
         # try login
+        # should fail before validating email
+        res = management.login(email, password)
+        self.assertNotEqual(res['userID'], -1)
+        self.assertEquals(res['token'], -1)
+
+
+        status = emailService.receiveVerificationResponse(5, hex(abs(hash(password)^hash("Adam")))[2:])
+        self.assertEquals(status['status'],0)
         res = management.login(email, password)
         self.assertNotEqual(res['userID'], -1)
         self.assertNotEqual(res['token'], -1)
@@ -523,7 +538,7 @@ class ViewTestCase(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.content,'Missing field')
 
-        # register twice
+        # invalid user
         self.request.body = json.dumps({'email':"1234@gmail.com", 'password': 'bcd'})
         response = views.reset(self.request)
         self.assertEqual(response.status_code, 400)
@@ -532,6 +547,8 @@ class ViewTestCase(TestCase):
         # success
         self.request.body = json.dumps({'email':"waduhack@gmail.com", 'password': 'bcd'})
         response = views.reset(self.request)
+        status = emailService.receiveVerificationResponse(5, hex(abs(hash('bcd')^hash("Adam")))[2:])
+        self.assertEquals(status['status'],0)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, 'Password has been reset')
 

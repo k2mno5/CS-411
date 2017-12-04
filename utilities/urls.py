@@ -25,4 +25,5 @@ urlpatterns = [
     url(r'^user/forgetPassword', views.reset),
     url(r'^getqIDfromaID/(?P<aID>[0-9]+)/$',views.getqIDfromaID),
     url(r'^search/search_questions/$', views.search_driver),
+    url(r'emailService/confirm/(?P<userID>[0-9]+)/(?P<encodedValue>)', views.receiveVerificationResponse),
 ]
