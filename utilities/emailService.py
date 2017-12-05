@@ -21,11 +21,13 @@ PORT = 587
 
 REPLY_URL = 'http://fa17-cs411-44.cs.illinois.edu/utilities/emailService/confirm/'
 
+REDIRECT_URL = 'http://fa17-cs411-44.cs.illinois.edu/utilities/redirect/'
+
 GENERAL_TEMPLATE = 'Hi ${USER_NAME},<br/><br/>${CONTENT}<br/><br/>Sincerely,<br/>StackQuora Team'
 
 VERIFICATION_TEMPLATE = 'You received this email as the last step to get everything set up, please click on the link below to finish the process.<br/><br/><a href="${GENERATED_URL}">${GENERATED_URL}</a>'
 
-UPDATE_ON_POST = '${USER_NAME} just ${ACTION} you on question ${QUESTION_TITLE}:<br/><br/>${ANSWER_CONTENT}'
+UPDATE_ON_POST = '${USER_NAME} just ${ACTION} you on question ${QUESTION_TITLE}:<br/><br/>${ANSWER_CONTENT}<br/><br/><a href="${GENERATED_URL}">View in StackQuora</a><br/>'
 
 def startSession(s, email):
     #s.connect()
@@ -74,18 +76,23 @@ def receiveVerificationResponse(userID, encodedValue):
 
 
 # updateNotification, a function that can be called when there is new answer posted
-# params: uid, userID of question owner
-#         title, the title of the question
-#         content, the content of the answer
-#         answererID, userID of answer owner
+# params: question, Questions ojbect from models.py as the question that just received an answer
+#         answer, Answer object from models.py as the answer which answered the question
 # return: dictionary contains 'status' and 'message'
 #             'status': 0 on success, 1 on any error
 #             'message': empty string on success, error message on any error
-def updateNotification(uid, title, content, answererID):
+def updateNotification(question, answer):
     try:
+        # prepare information
+        uid = question.owneruserid
+        title = question.title
+        content = answer.body
+        answererID = answer.owneruserid
+        qid = question.qid
+
         # processing content and other parameters to get users involved
         mentioned = re.findall(r"@(\w+) ", content)
-        users = StackQuora.Users.objects.filter(Q(uid__in = [uid, answererID]) | Q(username_in = mentioned))
+        users = StackQuora.Users.objects.filter(Q(uid__in = [uid, answererID]) | Q(username__in = mentioned))
         asker = None
         answerer = None
         mentioned = []
@@ -102,28 +109,39 @@ def updateNotification(uid, title, content, answererID):
         # users that are mentioned in the post
         mentionedUsers = [(mentionedUser.uid, mentionedUser.email) for mentionedUser in StackQuora.Authorization.objects.filter(uid__in = mentioned)]
         # user that gets answers (question owner)
-        user = StackQuora.Authorization.objects.get(uid = uid)
+        owner = None
+        try:
+            owner = StackQuora.Authorization.objects.get(uid = uid)
+        except ObjectDoesNotExist:
+            owner = None
+
+        # redirect url
+        displayUrl = REDIRECT_URL + str(qid)
 
         # initiate the session
         s = smtplib.SMTP(host=HOST, port=PORT)
-        msg = startSession(s, user.email)
+        msg = startSession(s, "")
  
         # send "mentioned" email
         msg['Subject'] = "[StackQuora] You Are Mentioned"
         for user in mentionedUsers:
-            msg['To'] = user[1]
-            content = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer.username, ACTION = "mentioned", QUESTION_TITLE = title, ANSWER_CONTENT = content)
-            message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = mentionedUserName[user[0]], CONTENT = content)
-            msg.attach(MIMEText(message,'html'))
+            msg.replace_header('To', user[1])
+            emailContent = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer.username, ACTION = "mentioned", QUESTION_TITLE = title, ANSWER_CONTENT = content, GENERATED_URL = displayUrl)
+            message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = mentionedUserName[user[0]], CONTENT = emailContent)
+            msg.set_payload(MIMEText(message,'html'))
             endSession(s, msg, False)
 
-        # send update to question owner
-        msg['Subject'] = "[StackQuora] Update on Your Question"
-        msg['To'] = user.email
-        content = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer.username, ACTION = "answered", QUESTION_TITLE = title, ANSWER_CONTENT = content)
-        message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = asker.username, CONTENT = content)
-        msg.attach(MIMEText(message,'html'))
-        endSession(s, msg)
+        # send update to question owner (if the owner is registered user)
+        if owner is not None:
+            msg.replace_header('Subject', "[StackQuora] Update on Your Question")
+            msg.replace_header('To', owner.email)
+            emailContent = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer.username, ACTION = "answered", QUESTION_TITLE = title, ANSWER_CONTENT = content, GENERATED_URL = displayUrl)
+            message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = asker.username, CONTENT = emailContent)
+            msg.set_payload(MIMEText(message,'html'))
+            endSession(s, msg)
+        else:
+            del msg
+            s.quit()
        
         return {'status':0, 'message':''}
     except Exception as e:
