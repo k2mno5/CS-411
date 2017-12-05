@@ -614,6 +614,7 @@ def postAnswer(body):
     cursor.execute(query,[owneruserID,aID,1,creationDate])
     # re-get the posted answer just in case
     new_answer = StackQuora.Answer.objects.get(aid = aID)
+    parent_ques = StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
     # send email to related user
     return_var = updateNotification(parent_ques, new_answer)
     if return_var['status'] == 0:
