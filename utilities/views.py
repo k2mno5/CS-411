@@ -9,7 +9,8 @@ import json
 from django.core import serializers
 
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+
 from models import Questions
 from . import management
 from . import search_engine
@@ -25,6 +26,8 @@ from django.core import serializers
 # Logger in view module see README to use the logger print here will not work
 stdlogger = logging.getLogger(__name__)
 
+
+REDIRECTION = "stackquora://fa17-cs411-44.cs.illinois.edu/?postID="
 
 # Default view
 def index(request):
@@ -361,4 +364,9 @@ def receiveVerificationResponse(request, userID, encodedValue):
         return HttpResponseBadRequest('Field type does not match')
     except:
         return HttpResponseServerError('Internal server error, please report')
-    
+
+def redirectToApp(request, postID):
+    response = HttpResponse("", status=302)
+    response['Location'] = REDIRECTION + postID
+    print(response['Location'])
+    return response

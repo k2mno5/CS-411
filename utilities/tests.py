@@ -25,12 +25,31 @@ def initTestOnlyEntry():
     # somebody (valid)
     StackQuora.Authorization.objects.create(email = "somebody@hotmail.com", password = "nobodyKnows", token = 12345, uid = 6, lastactive = now, datejoined = yesterday)
 
+    StackQuora.Authorization.objects.create(email = "hello@hotmail.com", password = "nobodyKnows", token = 12345, uid = 1, lastactive = now, datejoined = yesterday)
 
 def clearTestOnlyEntry():
     # linked to existing entry, so related users shouldn't be deleted
     StackQuora.Authorization.objects.all().delete()
 
 # Create your tests here.
+class EmailServiceTestCase(TestCase):
+    def setUp(self):
+        initTestOnlyEntry()
+        self.maxDiff = None
+
+    def tearDown(self):
+        clearTestOnlyEntry()
+
+    def testEmailNotification(self):
+        # tell Wadu someone answered his question (and Aya of course as being mentioned)
+        question = StackQuora.Questions.objects.get(qid = 3)
+        answer = StackQuora.Answers.objects.get(aid = 3)
+        answer.body = answer.body + "@Alice @Aya "
+
+        res = emailService.updateNotification(question, answer)
+        self.assertEquals(res, {'status':0, 'message':''})
+
+
 class ManagementTestCase(TestCase):
     def setUp(self):
         initTestOnlyEntry()
