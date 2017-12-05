@@ -24,6 +24,9 @@ import time
 import datetime
 import json
 
+# email service used in postAnswer
+from . import emailService
+
 import emailService
 
 # logger for management module
@@ -579,7 +582,7 @@ def postAnswer(body):
         return HttpResponseBadRequest("User is not registered!")
     
     try:
-        StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
+        parent_ques = StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
     except ObjectDoesNotExist:
         return HttpResponseBadRequest("No corresponding question exists.")
 
@@ -609,8 +612,15 @@ def postAnswer(body):
                 VALUES (%s,%s,%s,%s)
             '''
     cursor.execute(query,[owneruserID,aID,1,creationDate])
-
-    return HttpResponse("Answer added.")
+    # re-get the posted answer just in case
+    new_answer = StackQuora.Answer.objects.get(aid = aID)
+    # send email to related user
+    return_var = updateNotification(parent_ques, new_answer)
+    if return_var['status'] == 0:
+        return HttpResponse("Answer added, email sent.")
+    else:
+        ret_string = "Answer added, email not sent due to: " + return_var['message']
+        return HttpResponseBadRequest(ret_string)
 
 # post Question, used to post question from a user
 # this function should only be exposed to user if user is logged in
@@ -739,7 +749,7 @@ def updateUserInfo(body):
         res = StackQuora.Users.objects.get(uid = userID)
     except ObjectDoesNotExist:
         return HttpResponseBadRequest("User doesn't exist.")
-	
+    
     res.username = userName
     res.save()
     return HttpResponse("Successfully update the name!")
