@@ -76,10 +76,8 @@ def receiveVerificationResponse(userID, encodedValue):
 
 
 # updateNotification, a function that can be called when there is new answer posted
-# params: uid, userID of question owner
-#         title, the title of the question
-#         content, the content of the answer
-#         answererID, userID of answer owner
+# params: question, Questions ojbect from models.py as the question that just received an answer
+#         answer, Answer object from models.py as the answer which answered the question
 # return: dictionary contains 'status' and 'message'
 #             'status': 0 on success, 1 on any error
 #             'message': empty string on success, error message on any error
