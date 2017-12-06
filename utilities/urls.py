@@ -26,5 +26,5 @@ urlpatterns = [
     url(r'^user/forgetPassword', views.reset),
     url(r'emailService/confirm/(?P<userID>[0-9]+)/(?P<encodedValue>[0-9a-f]+)', views.receiveVerificationResponse),
     url(r'redirect/(?P<postID>[0-9]+)', views.redirectToApp),
-    url(r'nameUpdate', nameUpdate.nameUpdate)
+#    url(r'nameUpdate', nameUpdate.nameUpdate)
 ]
