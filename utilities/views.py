@@ -366,7 +366,9 @@ def receiveVerificationResponse(request, userID, encodedValue):
         return HttpResponseServerError('Internal server error, please report')
 
 def redirectToApp(request, postID):
+    res = '<html>{0}<script>window.location = "{0}";</script></html>'.format(REDIRECTION + postID)
+    return HttpResponse(res)
     response = HttpResponse("", status=302)
     response['Location'] = REDIRECTION + postID
-    print(response['Location'])
+    print(response)
     return response

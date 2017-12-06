@@ -831,7 +831,7 @@ def reset(userEmail, userPassword):
         validUser.pendingpassword = userPassword
 
         user = StackQuora.Users.objects.get(uid = validUser.uid)
-        res = emailService.sendVerificationEmail(validUser.email, validUser.uid, user.username, validUser.pendingpassword)
+        res = emailService.sendVerificationEmail(validUser.email, validUser.uid, user.username, validUser.pendingpassword, reset=1)
         # When something is wrong in email, just ignore it and assume validated
         if(res['status'] == 1):
             validUser.password = validUser.pendingpassword

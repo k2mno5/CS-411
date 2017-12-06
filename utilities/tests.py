@@ -44,10 +44,14 @@ class EmailServiceTestCase(TestCase):
         # tell Wadu someone answered his question (and Aya of course as being mentioned)
         question = StackQuora.Questions.objects.get(qid = 3)
         answer = StackQuora.Answers.objects.get(aid = 3)
-        answer.body = answer.body + "@Alice @Aya "
-
         res = emailService.updateNotification(question, answer)
         self.assertEquals(res, {'status':0, 'message':''})
+
+        # mention somebody
+        answer.body = answer.body + "@Alice @Aya "
+        res = emailService.updateNotification(question, answer)
+        self.assertEquals(res, {'status':0, 'message':''})
+
 
 
 class ManagementTestCase(TestCase):
@@ -491,7 +495,7 @@ class ViewTestCase(TestCase):
         self.assertEqual(response.content, 'Email has been registered')
 
         # success
-        self.request.body = json.dumps({'email':"123@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
+        self.request.body = json.dumps({'email':"223@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
         response = views.signup(self.request)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.content)['userID'] > 6, True)
