@@ -492,7 +492,7 @@ class ViewTestCase(TestCase):
         self.assertEqual(response.content, 'Email has been registered')
 
         # success
-        self.request.body = json.dumps({'email':"123@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
+        self.request.body = json.dumps({'email':"223@gmail.com", 'password': 'bcd', 'userName': 'wadu'})
         response = views.signup(self.request)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(json.loads(response.content)['userID'] > 6, True)

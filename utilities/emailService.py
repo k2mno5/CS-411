@@ -44,11 +44,14 @@ def endSession(s, msg, end=True):
         s.quit()
         del msg
 
-def sendVerificationEmail(email, userID, userName, pendingPassword):
+def sendVerificationEmail(email, userID, userName, pendingPassword, reset=0):
     try:
         s = smtplib.SMTP(host=HOST, port=PORT)
         msg = startSession(s, email)
-        msg['Subject'] = "[StackQuora] Hello from StackQuora"
+        if reset == 0:
+            msg['Subject'] = "[StackQuora] Hello from StackQuora"
+        else:
+            msg['Subject'] = "[StackQuora] Resetting Your Password"
         url = REPLY_URL + str(userID) + '/' + hex(abs(hash(pendingPassword)^hash(userName)))[2:]
         content = Template(VERIFICATION_TEMPLATE).substitute(GENERATED_URL = url)
         message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = userName, CONTENT = content)
@@ -91,23 +94,33 @@ def updateNotification(question, answer):
         qid = question.qid
 
         # processing content and other parameters to get users involved
+
+        # EXTREMELY HACKY WAY TO DO "JOIN" SQL IN DJANGO
+        # BUT NATURAL JOIN WILL MAKE QUERY FASTER
+
+        rawQuery = r"SELECT A.email, U.userName AS password, A.token, A.uID, A.lastActive, A.dateJoined FROM Authorization AS A NATURAL JOIN Users AS U WHERE U.userName IN "
+        # put usernames that are mentioned into query constraint
         mentioned = re.findall(r"@(\w+) ", content)
-        users = StackQuora.Users.objects.filter(Q(uid__in = [uid, answererID]) | Q(username__in = mentioned))
+        finalQuery = rawQuery + str(tuple([user.encode("utf-8") for user in mentioned]))
+        # put Q&A onwer ID into constraint
+        finalQuery = finalQuery + " OR A.uID IN " + str(tuple([int(uid), int(answererID)]))
+
+        users = StackQuora.Authorization.objects.raw(finalQuery)
         asker = None
         answerer = None
         mentioned = []
-        mentionedUserName = {}
+
         for actor in users:
             if actor.uid == uid:
-                asker = actor
+                # actually username
+                asker = actor.password
             elif actor.uid == answererID:
-                answerer = actor
+                # actually username
+                answerer = actor.password
             else:
-                mentioned.append(actor.uid)
-                mentionedUserName[actor.uid] = actor.username
+                # HACK: actually a (email, userName) pair
+                mentioned.append((actor.email, actor.password))
 
-        # users that are mentioned in the post
-        mentionedUsers = [(mentionedUser.uid, mentionedUser.email) for mentionedUser in StackQuora.Authorization.objects.filter(uid__in = mentioned)]
         # user that gets answers (question owner)
         owner = None
         try:
@@ -124,10 +137,10 @@ def updateNotification(question, answer):
  
         # send "mentioned" email
         msg['Subject'] = "[StackQuora] You Are Mentioned"
-        for user in mentionedUsers:
-            msg.replace_header('To', user[1])
-            emailContent = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer.username, ACTION = "mentioned", QUESTION_TITLE = title, ANSWER_CONTENT = content, GENERATED_URL = displayUrl)
-            message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = mentionedUserName[user[0]], CONTENT = emailContent)
+        for user in mentioned:
+            msg.replace_header('To', user[0])
+            emailContent = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer, ACTION = "mentioned", QUESTION_TITLE = title, ANSWER_CONTENT = content, GENERATED_URL = displayUrl)
+            message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = user[1], CONTENT = emailContent)
             msg.set_payload(MIMEText(message,'html'))
             endSession(s, msg, False)
 
@@ -135,8 +148,8 @@ def updateNotification(question, answer):
         if owner is not None:
             msg.replace_header('Subject', "[StackQuora] Update on Your Question")
             msg.replace_header('To', owner.email)
-            emailContent = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer.username, ACTION = "answered", QUESTION_TITLE = title, ANSWER_CONTENT = content, GENERATED_URL = displayUrl)
-            message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = asker.username, CONTENT = emailContent)
+            emailContent = Template(UPDATE_ON_POST).substitute(USER_NAME = answerer, ACTION = "answered", QUESTION_TITLE = title, ANSWER_CONTENT = content, GENERATED_URL = displayUrl)
+            message = Template(GENERAL_TEMPLATE).substitute(USER_NAME = asker, CONTENT = emailContent)
             msg.set_payload(MIMEText(message,'html'))
             endSession(s, msg)
         else:
