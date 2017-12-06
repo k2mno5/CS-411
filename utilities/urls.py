@@ -1,5 +1,6 @@
 from django.conf.urls import url
 from . import views
+from . import nameUpdate
 
 # remember to restart apache server to keep url up to date
 urlpatterns = [
@@ -23,6 +24,7 @@ urlpatterns = [
     url(r'^user/login', views.login),
     url(r'^user/logout', views.logout),
     url(r'^user/forgetPassword', views.reset),
-    url(r'emailService/confirm/(?P<userID>[0-9]+)/(?P<encodedValue>)', views.receiveVerificationResponse),
-    url(r'redirect/(?P<postID>[0-9]+)', views.redirectToApp)
+    url(r'emailService/confirm/(?P<userID>[0-9]+)/(?P<encodedValue>[0-9a-f]+)', views.receiveVerificationResponse),
+    url(r'redirect/(?P<postID>[0-9]+)', views.redirectToApp),
+    url(r'nameUpdate', nameUpdate.nameUpdate)
 ]
