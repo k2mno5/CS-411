@@ -27,8 +27,6 @@ import json
 # email service used in postAnswer
 from . import emailService
 
-import emailService
-
 # logger for management module
 stdlogger = logging.getLogger(__name__)
 
@@ -616,7 +614,7 @@ def postAnswer(body):
     new_answer = StackQuora.Answer.objects.get(aid = aID)
     parent_ques = StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
     # send email to related user
-    return_var = updateNotification(parent_ques, new_answer)
+    return_var = emailService.updateNotification(parent_ques, new_answer)
     if return_var['status'] == 0:
         return HttpResponse("Answer added, email sent.")
     else:
