@@ -3,3 +3,5 @@ MySQL-python==1.2.5
 coverage
 coverage-badge
 Py-StackExchange
+fuzzywuzzy[speedup]
+nltk

@@ -27,7 +27,6 @@ def initTestOnlyEntry():
 
     StackQuora.Authorization.objects.create(email = "hello@hotmail.com", password = "nobodyKnows", token = 12345, uid = 1, lastactive = now, datejoined = yesterday)
 
-
 def clearTestOnlyEntry():
     # linked to existing entry, so related users shouldn't be deleted
     StackQuora.Authorization.objects.all().delete()

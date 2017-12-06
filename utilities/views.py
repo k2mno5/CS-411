@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
 from django.http import *
 from django.http import HttpResponse
 from django.http import JsonResponse
@@ -14,10 +13,14 @@ from django.shortcuts import render, redirect
 
 from models import Questions
 from . import management
+from . import search_engine
 from . import emailService
-
 import time
 import logging
+from django.http import JsonResponse
+import json
+from django.core import serializers
+
 
 
 # Logger in view module see README to use the logger print here will not work
@@ -36,12 +39,13 @@ def index(request):
 # updateVoteStatus wrapper
 # input: Http get_request
 # output: empty http response
-def updateVoteStatus(request, postID, postType, userID, voteStatus):
+def updateVoteStatus(request, postID, postType, userID, voteStatus, token):
     postID = int(postID)
     postType = int(postType)
     userID = int(userID)
     voteStatus = int(voteStatus)
-    return management.updateVoteStatus(postID, postType, userID, voteStatus)
+    token = int(token)
+    return management.updateVoteStatus(postID, postType, userID, voteStatus, token)
 
 # getUserUpdate wrapper
 # input uID, Http_get_request
@@ -57,8 +61,9 @@ def getUserUpdate_random(request):
 # input ID, possibly UID or AID, 
 #       ques, specify whether a question an all of its answers will return
 # output json file specified online
-def displayQuestionAnswers(request, qaID, is_ques):
-    return management.displayQuestionAnswers(int(qaID), int(is_ques))
+def displayQuestionAnswers(request, qaID, is_answ):
+    return management.displayQuestionAnswers(int(qaID), int(is_answ))
+
 
 # post answer, add an answer to the question
 # input request containing the json file of hte answer
@@ -73,8 +78,8 @@ def postQuestion(request):
     return management.postQuestion(request.body)
 
 # delete a post, could be a question or an answer
-def deletePost(request, ID, is_ques):
-    return management.deletePost(int(ID), int(is_ques))
+def deletePost(request, ID, is_answ, userID ,token):
+    return management.deletePost(int(ID), int(is_answ), int(userID), int(token))
 
 
 # get following status by Luo
@@ -212,6 +217,7 @@ def getFollows(request, requestType, userID, page, showDetail):
         # this should never happend since regex makes sure that parameters can be parsed to corresponding type
         return HttpResponseBadRequest('Field type does not match')
 
+
 def getCertainActivities(request, userID, postType, actionType, page):
     try:
         uID = int(userID)
@@ -235,9 +241,14 @@ def getCertainActivities(request, userID, postType, actionType, page):
 def updateFollowers(request):
     return management.updateFollowers(request.body)
 
+# function that update user name
 @csrf_exempt
 def updateUserInfo(request):
     return management.updateUserInfo(request.body)
+
+# helper function to lookup qid from aid
+def getqIDfromaID(request,aID):
+    return management.getqIDfromaID(int(aID))
 
 @csrf_exempt
 def signup(request):
@@ -330,6 +341,12 @@ def reset(request):
             return HttpResponseBadRequest('User not found')
     except:
         return HttpResponseServerError('Internal server error, please report')
+
+
+# ======================= Advance Function, Search and Ranking engine ===================
+@csrf_exempt
+def search_driver(request):
+    return JsonResponse(search_engine.search_driver(request.body))
 
 def receiveVerificationResponse(request, userID, encodedValue):
     try:

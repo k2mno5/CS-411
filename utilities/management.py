@@ -13,6 +13,7 @@ from django.db.models import Max
 from random import randint
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
+ 
 
 # date processing dependency
 from django.core import serializers
@@ -23,7 +24,8 @@ import time
 import datetime
 import json
 
-import emailService
+# email service used in postAnswer
+from . import emailService
 
 # logger for management module
 stdlogger = logging.getLogger(__name__)
@@ -293,6 +295,7 @@ def getCertainActivities(userID, postType, actionType, page):
     res["postDetail"] = getPosts(postIDs, postTypes)
     return res
 
+
 # updateVoteStatus
 # input: post ID, 
 #        post Type (0: question, 1: answers), 
@@ -301,7 +304,13 @@ def getCertainActivities(userID, postType, actionType, page):
 # output: empty http response
 # side-effect: updating table
 # sample url: localhost/utilities/post/vote/999/0/9999/1/
-def updateVoteStatus(postID, postType, userID, voteStatus):
+def updateVoteStatus(postID, postType, userID, voteStatus, token):
+    # check userID and token
+    if validation(userID, token) == 1:
+        return HttpResponseBadRequest("Token invalid, login again!")
+    elif validation(userID, token) == 2:
+        return HttpResponseBadRequest("User is not registered!")
+
     try:
         if postType == 0:
             data = StackQuora.Questions.objects.get(qid = postID)
@@ -333,8 +342,6 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
         # activity = StackQuora.Activityhistory.objects.create(uid = userID, actionid = postID, 
         #   actiontype = newactiontype, time = datetime.datetime.utcnow())
         
-        stdlogger.info("enter loop if statement A")
-
         uid=userID
         actionid = postID
         actiontype = newactiontype
@@ -363,10 +370,14 @@ def updateVoteStatus(postID, postType, userID, voteStatus):
                 uid = userID
                 actionid = postID
                 cursor = connection.cursor()
+
+                # incase the user reset its own question 
+                # which is highly unlikely, but it can happen.
                 query = '''DELETE FROM ActivityHistory 
                            WHERE uID = %s and actionID = %s
+                           and actionType != %s and actionType !=%s 
                         '''
-                cursor.execute(query,[uid,actionid])
+                cursor.execute(query,[uid,actionid,1,0])
             else:
                 cursor = connection.cursor()
                 query = '''UPDATE ActivityHistory 
@@ -411,6 +422,15 @@ def getUserUpdate_random():
     # formatting json object    
     data_json = serializers.serialize('json', random_data)
     data_json = json_parser.json_getUserUpdate(data_json, tag_array, len(tag_array))
+
+    # add user Name, pretty sure it is all Joe
+    data_json_temp_list = data_json['contents']
+    
+    for i in range(len(data_json_temp_list)):
+        userID = data_json_temp_list[i]['owneruserid']
+        data_json_temp_list[i]['ownerusername'] = StackQuora.Users.objects.get(uid = userID).username
+    data_json['contents'] = data_json_temp_list
+
     return JsonResponse(data_json)
 
 
@@ -428,12 +448,12 @@ def getUserUpdate_random():
     "wifi-direct",
     "wifip2p"
 '''
-def displayQuestionAnswers(qaID, is_ques):
+def displayQuestionAnswers(qaID, is_answ):
     data_json = {}
     questionAuther = ()
     aAuthorID = []
     answerAuthors = []
-    if is_ques != 0:
+    if not is_answ:
         # try to get questions specified by qaID
         try:
             req_question = StackQuora.Questions.objects.get(qid = qaID)
@@ -484,12 +504,18 @@ def displayQuestionAnswers(qaID, is_ques):
 
 # delete a post, could either be an answer or a question
 # input: ID, qid or aid, is_ques specify whether this is 
+# additional input: userid and token number
 #   an answer or not
 # side effect: delete corresponding database entry
-def deletePost(ID, is_ques):
+def deletePost(ID, is_answ, userID, token):
+
+    if validation(userID, token) == 1:
+        return HttpResponseBadRequest("Token invalid, login again!")
+    elif validation(userID, token) == 2:
+        return HttpResponseBadRequest("User is not registered!")
+
     # if deleting a question, all other things has to be deleted
-    if is_ques:
-        stdlogger.info("is question")
+    if not is_answ:
         has_answer = True
         has_tag = True
         try:
@@ -508,6 +534,12 @@ def deletePost(ID, is_ques):
             has_tag = False
 
         if has_answer:
+            # delete all answer in activity history
+            for ele in answers:
+                cursor = connection.cursor()
+                query = '''DELETE FROM ActivityHistory 
+                        WHERE actionid = %s '''
+                cursor.execute(query,[ele.aid])
             answers.delete()
 
         if has_tag:
@@ -517,31 +549,38 @@ def deletePost(ID, is_ques):
 
     # else if we are deleting answer
     else:
-        stdlogger.info("is answer only")
         try:
             answer = StackQuora.Answers.objects.get(aid = ID)
         except ObjectDoesNotExist:
             return HttpResponseBadRequest("aID no longer exist in the database.") 
         answer.delete()
 
-    # @TODO add user activity history
+    # chagne user activity history
+    # delete every information related to the post
+    cursor = connection.cursor()
+    query = '''DELETE FROM ActivityHistory 
+            WHERE actionid = %s '''
+    cursor.execute(query,[ID])
     return HttpResponse("Successfully deleted!")
 
 
 # post Answer, used to post answer to a question
 # input http post request body
 # side effect insert answer into the database
+# additional input: expecting token id in the token field in content
 def postAnswer(body):
     inJson = json.loads(body)
     answer_content = inJson['content']
+    userID = int(answer_content['userID'])
+    token = int(answer_content['token'])
 
-    try:
-        StackQuora.Users.objects.get(uid = int(answer_content['userID']))
-    except ObjectDoesNotExist:
-        return HttpResponseBadRequest("No corresponding user exists: {}".format(int(answer_content['userID'])))
+    if validation(userID, token) == 1:
+        return HttpResponseBadRequest("Token invalid, login again!")
+    elif validation(userID, token) == 2:
+        return HttpResponseBadRequest("User is not registered!")
     
     try:
-        StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
+        parent_ques = StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
     except ObjectDoesNotExist:
         return HttpResponseBadRequest("No corresponding question exists.")
 
@@ -564,20 +603,39 @@ def postAnswer(body):
     except IntegrityError:
         return HttpResponseBadRequest("IntegrityError occured, check your pkey.")
 
-    # @TODO add user activity history
-
-    return HttpResponse("Answer added.")
+    # add user activity history
+    # cursor used to execute raw query
+    cursor = connection.cursor()
+    query = '''INSERT INTO ActivityHistory (uID, actionID, actionType, time)
+                VALUES (%s,%s,%s,%s)
+            '''
+    cursor.execute(query,[owneruserID,aID,1,creationDate])
+    # re-get the posted answer just in case
+    new_answer = StackQuora.Answers.objects.get(aid = aID)
+    parent_ques = StackQuora.Questions.objects.get(qid = int(answer_content['parentID']))
+    # send email to related user
+    return_var = emailService.updateNotification(parent_ques, new_answer)
+    if return_var['status'] == 0:
+        return HttpResponse("Answer added, email sent.")
+    else:
+        ret_string = "Answer added, email not sent due to: " + return_var['message']
+        return HttpResponseBadRequest(ret_string)
 
 # post Question, used to post question from a user
 # this function should only be exposed to user if user is logged in
 # otherwise, exception will be thrown
+# additional input: token in content
 def postQuestion(body):
     inJson = json.loads(body)
     question_content = inJson['content'] 
-    try:
-        StackQuora.Users.objects.get(uid = int(question_content['userID']))
-    except ObjectDoesNotExist:
-        return HttpResponseBadRequest("No corresponding user exists: {}".format(int(question_content['userID'])))
+
+    userID = int(question_content['userID'])
+    token = int(question_content['token'])
+
+    if validation(userID, token) == 1:
+        return HttpResponseBadRequest("Token invalid, login again!")
+    elif validation(userID, token) == 2:
+        return HttpResponseBadRequest("User is not registered!")
     
     max_ = StackQuora.Questions.objects.aggregate(Max('qid'))['qid__max']
     
@@ -603,37 +661,51 @@ def postQuestion(body):
 
     # if pass, insert tags
     for tag in tags:
-        stdlogger.info(tag)
-        stdlogger.info(qID)
         try:
             new_tag = StackQuora.Tags.objects.create(tid = qID, tags = tag)
         except:
             return HttpResponseBadRequest("IntegrityError occured in tags, check your pkey.")
     
-    # @TODO add user activity history
+    # add user activity history
+    # cursor used to execute raw query
+    cursor = connection.cursor()
+    query = '''INSERT INTO ActivityHistory (uID, actionID, actionType, time)
+                VALUES (%s,%s,%s,%s)
+            '''
+    cursor.execute(query,[owneruserID,qID,0,creationDate])
 
     return HttpResponse("Question added.")
 
-
+# function update followers
+# input: userID, targetID, type
+# output: none
+# side-effect: follower-following pair inserted into database
+# additonal input: token in body
 def updateFollowers(body):
     inJson = json.loads(body)
     userID = int(inJson['userID'])
     targetID = int(inJson['targetID'])
     typ = int(inJson['type'])
+    token = int(inJson['token'])
+
+    if validation(userID, token) == 1:
+        return HttpResponseBadRequest("Token invalid, login again!")
+    elif validation(userID, token) == 2:
+        return HttpResponseBadRequest("User is not registered!")
 
     if userID == targetID:
         return HttpResponse("LOL, user cannot follow himself, loop is not allowed!")
 
     try:
-        StackQuora.Users.objects.get(uid = userID)
-        StackQuora.Users.objects.get(uid = targetID)        
+        user = StackQuora.Users.objects.get(uid = userID)
+        target = StackQuora.Users.objects.get(uid = targetID)        
     except ObjectDoesNotExist:
         return HttpResponseBadRequest("Either user or target user doesn't exist.")
 
     # find if the user is following the target
     if typ == 1:
         try:
-            res = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+            StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
         except ObjectDoesNotExist:
             return HttpResponseBadRequest("User-target pair does not exists!")
         cursor = connection.cursor()
@@ -641,19 +713,37 @@ def updateFollowers(body):
                     WHERE uID = %s and uIDFollowing = %s
                 '''
         cursor.execute(query,[userID, targetID])
+        user.following = user.following - 1
+        target.follower = target.follower - 1
+        user.save()
+        target.save()
         return HttpResponse("Successfully deleted pair!")
     else:
         try:
-            res = StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
+            StackQuora.Following.objects.get(uid = userID, uidfollowing = targetID)
         except ObjectDoesNotExist:
+            user.following = user.following+1
+            target.follower = target.follower+1
+            user.save()
+            target.save()
             new_pair = StackQuora.Following.objects.create(uid = userID, uidfollowing = targetID)
             return HttpResponse("Successfully add pair!")
     return HttpResponse("Pair already exists!")
 
+# function updates userName, 
+# we only have userName right now
+# additional input, expecting token
 def updateUserInfo(body):
     inJson = json.loads(body)
     userID = int(inJson['userID'])
     userName = inJson['userName']
+    token = int(inJson['token'])
+    
+    if validation(userID, token) == 1:
+        return HttpResponseBadRequest("Token invalid, login again!")
+    elif validation(userID, token) == 2:
+        return HttpResponseBadRequest("User is not registered!")
+    
     try:
         res = StackQuora.Users.objects.get(uid = userID)
     except ObjectDoesNotExist:
@@ -662,6 +752,16 @@ def updateUserInfo(body):
     res.username = userName
     res.save()
     return HttpResponse("Successfully update the name!")
+
+# little helper function that gets qID from aID
+# database is indexed on p-key so we are good.
+def getqIDfromaID(aID):
+    try:
+        res = StackQuora.Answers.objects.get(aid = aID)
+    except:
+        return HttpResponseBadRequest("Answer with aID passed in doesn't exists.")
+    return HttpResponse(res.parentid)
+
 
 # createToken
 # params: uid, userID that needs new token
