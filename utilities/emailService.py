@@ -98,12 +98,15 @@ def updateNotification(question, answer):
         # EXTREMELY HACKY WAY TO DO "JOIN" SQL IN DJANGO
         # BUT NATURAL JOIN WILL MAKE QUERY FASTER
 
-        rawQuery = r"SELECT A.email, U.userName AS password, A.token, A.uID, A.lastActive, A.dateJoined FROM Authorization AS A NATURAL JOIN Users AS U WHERE U.userName IN "
+        rawQuery = r"SELECT A.email, U.userName AS password, A.token, A.uID, A.lastActive, A.dateJoined FROM Authorization AS A NATURAL JOIN (SELECT uID, userName FROM Users WHERE"
         # put usernames that are mentioned into query constraint
         mentioned = re.findall(r"@(\w+) ", content)
-        finalQuery = rawQuery + str(tuple([user.encode("utf-8") for user in mentioned]))
+
+        finalQuery = rawQuery
+        if len(mentioned) > 0:
+            finalQuery = rawQuery + " userName IN " + str(tuple([user.encode("utf-8") for user in mentioned])) + " OR"
         # put Q&A onwer ID into constraint
-        finalQuery = finalQuery + " OR A.uID IN " + str(tuple([int(uid), int(answererID)]))
+        finalQuery = finalQuery + " uID IN " + str(tuple([int(uid), int(answererID)])) + " ) AS U"
 
         users = StackQuora.Authorization.objects.raw(finalQuery)
         asker = None

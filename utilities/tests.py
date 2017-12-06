@@ -45,10 +45,14 @@ class EmailServiceTestCase(TestCase):
         # tell Wadu someone answered his question (and Aya of course as being mentioned)
         question = StackQuora.Questions.objects.get(qid = 3)
         answer = StackQuora.Answers.objects.get(aid = 3)
-        answer.body = answer.body + "@Alice @Aya "
-
         res = emailService.updateNotification(question, answer)
         self.assertEquals(res, {'status':0, 'message':''})
+
+        # mention somebody
+        answer.body = answer.body + "@Alice @Aya "
+        res = emailService.updateNotification(question, answer)
+        self.assertEquals(res, {'status':0, 'message':''})
+
 
 
 class ManagementTestCase(TestCase):
